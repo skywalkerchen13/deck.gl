@@ -6,9 +6,7 @@ import DeckGL from '@deck.gl/react';
 import {CartoLayer, FORMATS, MAP_TYPES} from '@deck.gl/carto';
 import {GeoJsonLayer} from '@deck.gl/layers';
 
-const ZOOMS = {3: 3, 4: 4, 5: 5, 6: 6};
-const FORMATTILES = {binary: 'binary', json: 'json'};
-const INITIAL_VIEW_STATE = {longitude: 8, latitude: 47, zoom: 6};
+const INITIAL_VIEW_STATE = {longitude: -100, latitude: 45, zoom: 3};
 const COUNTRIES =
   'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_admin_0_scale_rank.geojson';
 
@@ -22,28 +20,7 @@ const apiBaseUrl = 'https://gcp-us-east1.api.carto.com';
 
 const config = {
   bigquery: {
-    h3: 'carto-dev-data.public.derived_spatialfeatures_che_h3res8_v1_yearly_v2',
-    h3int: 'carto-dev-data.public.derived_spatialfeatures_che_h3int_res8_v1_yearly_v2',
-    quadbin: 'carto-dev-data.public.derived_spatialfeatures_che_quadgrid15_v1_yearly_v2_quadbin'
-  },
-  snowflake: {
-    h3: 'carto_dev_data.public.derived_spatialfeatures_che_h3res8_v1_yearly_v2',
-    h3int: 'carto_dev_data.public.derived_spatialfeatures_che_h3int_res8_v1_yearly_v2',
-    quadbin: 'carto_dev_data.public.derived_spatialfeatures_che_quadgrid15_v1_yearly_v2_quadbin'
-  },
-  redshift: {
-    h3: 'carto_dev_data.public.derived_spatialfeatures_che_h3res8_v1_yearly_v2',
-    h3int: 'carto_dev_data.public.derived_spatialfeatures_che_h3int_res8_v1_yearly_v2',
-    quadbin: 'carto_dev_data.public.derived_spatialfeatures_che_quadgrid15_v1_yearly_v2_quadbin'
-  },
-  postgres: {
-    h3: 'carto_dev_data.public.derived_spatialfeatures_esp_h3res8_v1_yearly_v2',
-    h3int: 'carto_dev_data.public.derived_spatialfeatures_esp_h3int_res8_v1_yearly_v2',
-    quadbin: 'carto_dev_data.public.derived_spatialfeatures_che_quadgrid15_v1_yearly_v2_quadbin'
-  },
-  databricks: {
-    h3: 'cluster.carto_dev_data.derived_spatialfeatures_che_h3res8_v1_yearly_v2',
-    h3int: 'cluster.carto_dev_data.derived_spatialfeatures_che_h3int_res8_v1_yearly_v2'
+    zcta: 'carto-dev-data.tilesets.geography_usa_zcta5_2019_tileset_properties'
   }
 };
 
@@ -54,26 +31,14 @@ const showCarto = true;
 
 function Root() {
   const [connection, setConnection] = useState('bigquery');
-  const [dataset, setDataset] = useState('h3');
-  const [zoom, setZoom] = useState(5);
-  const [formatTiles, setFormatTiles] = useState('binary');
+  const [dataset, setDataset] = useState('zcta');
   const table = config[connection][dataset];
   return (
     <>
       <DeckGL
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
-        layers={[
-          showBasemap && createBasemap(),
-          showCarto && createCarto(connection, zoom, table, formatTiles)
-        ]}
-      />
-      <ObjectSelect title="zooms" obj={ZOOMS} value={zoom} onSelect={setZoom} />
-      <ObjectSelect
-        title="formatTiles"
-        obj={FORMATTILES}
-        value={formatTiles}
-        onSelect={setFormatTiles}
+        layers={[showBasemap && createBasemap(), showCarto && createCarto(connection, table)]}
       />
       <ObjectSelect
         title="connection"
@@ -111,16 +76,8 @@ function createBasemap() {
 }
 
 // Add aggregation expressions
-function createCarto(connection, zoom, table, formatTiles) {
-  const isH3 = table.includes('h3');
-  const isQuadbin = table.includes('quadbin');
-  const geoColumn = isH3
-    ? 'h3'
-    : isQuadbin
-    ? 'quadbin'
-    : table.endsWith('_quadkey')
-    ? 'quadkey'
-    : 'quadint';
+function createCarto(connection, table) {
+  const geoColumn = 'blah';
   return new CartoLayer({
     id: 'carto',
     connection,
@@ -128,21 +85,7 @@ function createCarto(connection, zoom, table, formatTiles) {
     credentials: {accessToken, apiBaseUrl},
 
     // Dynamic tiling. Request TILEJSON format with TABLE
-    type: MAP_TYPES.TABLE,
-    format: FORMATS.TILEJSON,
-
-    // tile data format
-    formatTiles,
-
-    // Aggregation
-    aggregationExp: 'avg(population) as value, 0.1*avg(population) as elevation, "test" as str',
-    aggregationResLevel: zoom,
-    geoColumn,
-    getQuadkey: d => d.id,
-
-    // Visibilty (will be converted to H3 levels in the case of H3 tiles)
-    minZoom: 5,
-    maxZoom: 9,
+    type: MAP_TYPES.TILESET,
 
     // autohighlight
     pickable: true,
@@ -150,18 +93,10 @@ function createCarto(connection, zoom, table, formatTiles) {
     highlightColor: [33, 77, 255, 255],
 
     // Styling
-    getFillColor: d => [
-      Math.pow((d.properties.value || d.properties.VALUE) / 200, 0.1) * 255,
-      255 - (d.properties.value || d.properties.VALUE),
-      79
-    ],
-    getElevation: d =>
-      'elevation' in d.properties
-        ? d.properties.elevation
-        : d.properties.value || d.properties.VALUE,
-    extruded: true,
-    opacity: 0.3,
-    elevationScale: 100
+    getFillColor: d => {
+      const {geoid} = d.properties;
+      return [geoid % 255, geoid % 671, geoid % 5128];
+    }
   });
 }
 
