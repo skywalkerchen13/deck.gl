@@ -99,8 +99,8 @@ function createCarto(connection, table, localCache) {
 
     // Styling
     getFillColor: d => {
-      const geoid = parseInt(d.properties.GEOID);
-      return [geoid % 255, geoid % 671, geoid % 5128];
+      const area = d.properties.DO_AREA / 1000000;
+      return [area % 255, (0.1 * area) % 255, (0.01 * area) % 255];
     }
   });
 }
