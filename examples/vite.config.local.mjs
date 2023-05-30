@@ -1,8 +1,22 @@
 import {defineConfig} from 'vite';
 import {getOcularConfig} from 'ocular-dev-tools';
 import {join} from 'path';
+import zlib from 'zlib';
 
 const rootDir = join(__dirname, '..');
+
+// Rewrite URLs in instantiation & tilejson response to use our endpoint
+const writeBody = (buffer, res) => {
+  let remoteBody = buffer.toString();
+  const isMapInstantiation = remoteBody.includes('nrows');
+  const endpoint = isMapInstantiation ? 'carto-api' : 'carto-data-api';
+  remoteBody = remoteBody.replace(
+    'https://gcp-us-east1.api.carto.com/',
+    `http://localhost:8080/${endpoint}/`
+  ); // Point at non-selfHandleResponse endpoint
+  res.write(remoteBody);
+  res.end();
+};
 
 /** https://vitejs.dev/config/ */
 export default defineConfig(async () => {
@@ -25,7 +39,52 @@ export default defineConfig(async () => {
     },
     server: {
       open: true,
-      port: 8080
+      port: 8080,
+      proxy: {
+        '/carto-api': {
+          target: 'https://gcp-us-east1.api.carto.com',
+          selfHandleResponse: true,
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/carto-api/, ''),
+          configure: proxy => {
+            proxy.on('proxyRes', (proxyRes, req, res) => {
+              proxyRes.headers['cache-control'] = 'public,max-age=100000,must-revalidate';
+
+              // Modify response for tilejson to update URLs
+              let body = [];
+
+              proxyRes.on('data', function (chunk) {
+                body.push(chunk);
+              });
+              proxyRes.on('end', function () {
+                body = Buffer.concat(body);
+
+                if (proxyRes.headers['content-encoding']) {
+                  zlib.unzip(body, (err, buffer) => {
+                    if (!err) {
+                      writeBody(buffer, res);
+                    } else {
+                      console.error(err);
+                    }
+                  });
+                } else {
+                  writeBody(body, res);
+                }
+              });
+            });
+          }
+        },
+        '/carto-data-api': {
+          target: 'https://gcp-us-east1.api.carto.com',
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/carto-data-api/, ''),
+          configure: proxy => {
+            proxy.on('proxyRes', (proxyRes, req, res) => {
+              proxyRes.headers['cache-control'] = 'public,max-age=100000,must-revalidate';
+            });
+          }
+        }
+      }
     },
     optimizeDeps: {
       esbuildOptions: {target: 'es2020'}

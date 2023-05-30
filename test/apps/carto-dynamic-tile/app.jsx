@@ -10,17 +10,9 @@ const INITIAL_VIEW_STATE = {longitude: -100, latitude: 45, zoom: 3};
 const COUNTRIES =
   'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_admin_0_scale_rank.geojson';
 
-// Skip CDN
-// const apiBaseUrl = 'https://direct-gcp-us-east1.api.carto.com';
-// PROD US GCP
-const apiBaseUrl = 'https://gcp-us-east1.api.carto.com';
-// const apiBaseUrl = 'https://gcp-us-east1-06.dev.api.carto.com';
-// Localhost
-// const apiBaseUrl = 'http://localhost:8002'
-
 const config = {
-  bigquery: {
-    zcta: 'carto-dev-data.tilesets.geography_usa_zcta5_2019_tileset_properties'
+  snowflake: {
+    zcta: 'CARTO_DEV_DATA.TILESETS.GEOGRAPHY_USA_ZCTA5_2019_TILESET_PROPERTIES2'
   }
 };
 
@@ -30,7 +22,8 @@ const showBasemap = true;
 const showCarto = true;
 
 function Root() {
-  const [connection, setConnection] = useState('bigquery');
+  const [connection, setConnection] = useState('snowflake');
+  const [localCache, setLocalCache] = useState(true);
   const [dataset, setDataset] = useState('zcta');
   const table = config[connection][dataset];
   return (
@@ -38,7 +31,10 @@ function Root() {
       <DeckGL
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
-        layers={[showBasemap && createBasemap(), showCarto && createCarto(connection, table)]}
+        layers={[
+          showBasemap && createBasemap(),
+          showCarto && createCarto(connection, table, localCache)
+        ]}
       />
       <ObjectSelect
         title="connection"
@@ -57,6 +53,14 @@ function Root() {
         value={dataset}
         onSelect={setDataset}
       />
+      <button
+        style={{position: 'relative', margin: 3}}
+        onClick={() => {
+          setLocalCache(!localCache);
+        }}
+      >
+        {localCache ? 'Use server data' : 'Use local cache'}
+      </button>
     </>
   );
 }
@@ -76,8 +80,9 @@ function createBasemap() {
 }
 
 // Add aggregation expressions
-function createCarto(connection, table) {
-  const geoColumn = 'blah';
+function createCarto(connection, table, localCache) {
+  // Use local cache to speed up API. See `examples/vite.config.local.mjs`
+  const apiBaseUrl = localCache ? '/carto-api' : 'https://gcp-us-east1.api.carto.com';
   return new CartoLayer({
     id: 'carto',
     connection,
@@ -94,7 +99,7 @@ function createCarto(connection, table) {
 
     // Styling
     getFillColor: d => {
-      const {geoid} = d.properties;
+      const geoid = parseInt(d.properties.GEOID);
       return [geoid % 255, geoid % 671, geoid % 5128];
     }
   });
