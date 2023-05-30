@@ -70,7 +70,12 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
       };
     }
 
-    return fetch(url, {propName: 'data', layer: this, loadOptions, signal});
+    // Fetch geometry and attributes separately
+    // For now hacked to fetch the same tile data twice
+    const geometry = fetch(url, {propName: 'data', layer: this, loadOptions, signal});
+    const attributes = fetch(url, {propName: 'data', layer: this, loadOptions, signal});
+
+    return Promise.all([geometry, attributes]);
   }
 
   renderSubLayers(
@@ -84,6 +89,10 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     if (props.data === null) {
       return null;
     }
+
+    // JOIN data
+    const [geometry, attributes] = props.data;
+    props.data = geometry;
 
     const tileBbox = props.tile.bbox as any;
     const {west, south, east, north} = tileBbox;
