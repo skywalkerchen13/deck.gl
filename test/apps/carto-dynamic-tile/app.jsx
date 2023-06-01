@@ -6,7 +6,7 @@ import DeckGL from '@deck.gl/react';
 import {CartoLayer, FORMATS, MAP_TYPES} from '@deck.gl/carto';
 import {GeoJsonLayer} from '@deck.gl/layers';
 
-const INITIAL_VIEW_STATE = {longitude: -100, latitude: 45, zoom: 3};
+const INITIAL_VIEW_STATE = {longitude: -100, latitude: 45, zoom: 4};
 const COUNTRIES =
   'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_admin_0_scale_rank.geojson';
 

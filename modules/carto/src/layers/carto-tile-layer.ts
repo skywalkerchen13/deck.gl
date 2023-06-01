@@ -17,6 +17,7 @@ import {binaryToGeojson} from '@loaders.gl/gis';
 import type {BinaryFeatures} from '@loaders.gl/schema';
 import {TileFormat, TILE_FORMATS} from '../api/maps-api-common';
 import type {Feature} from 'geojson';
+import GilbertPartition from './gilbert-partition';
 
 const defaultTileFormat = TILE_FORMATS.BINARY;
 
@@ -51,6 +52,48 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     this.setState({binary});
   }
 
+  getQueryUrl(tile: TileLoadProps) {
+    // const tileset = this.props.data.name;
+    const tileset = 'carto-dev-data.named_areas_tilesets.geography_usa_zcta5_2019_tileset';
+    const {x, y, z} = tile.index;
+
+    const partition = '0_12_37_3708_870_2214_3999_1';
+    const [zmin, zmax, xmin, xmax, ymin, ymax, partitions, zstep] = partition.split('_');
+    const zRange = {zmin, zmax, zstep};
+    const zMaxBbox = {xmin, xmax, ymin, ymax};
+    const Partitioner = new GilbertPartition(partitions, zRange, zMaxBbox);
+    const p = Partitioner.getPartition({z, x, y});
+
+    const uniqueIdProperty = 'geoid';
+    const columns = ['total_pop'];
+    const dataQuery = `select ${uniqueIdProperty}, ${columns.join(
+      ', '
+    )} FROM carto-dev-data.named_areas_tilesets.sub_usa_acs_demographics_sociodemographics_usa_zcta5_2015_5yrs_20112015`;
+
+    const query = `
+    WITH ids AS (
+      SELECT geoids
+        FROM ${tileset}
+        WHERE z=${z} AND y=${y} AND x=${x} AND carto_partition=${p}
+    ), data_source AS (
+      ${dataQuery}
+    )
+
+    SELECT ${uniqueIdProperty}, ${columns.join(', ')} FROM data_source a, ids
+     WHERE a.${uniqueIdProperty} IN (select * from unnest(ids.geoids))
+    `;
+
+    // Construct request to query API
+    const {
+      //connection,
+      credentials: {apiBaseUrl}
+    } = this.props;
+    const connection = 'carto_dw';
+    const queryUrl = `${apiBaseUrl}/v3/sql/${connection}/query?q=${encodeURI(query)}`;
+
+    return queryUrl;
+  }
+
   getTileData(tile: TileLoadProps) {
     const url = _getURLFromTemplate(this.state.data, tile);
     if (!url) {
@@ -73,7 +116,14 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     // Fetch geometry and attributes separately
     // For now hacked to fetch the same tile data twice
     const geometry = fetch(url, {propName: 'data', layer: this, loadOptions, signal});
-    const attributes = fetch(url, {propName: 'data', layer: this, loadOptions, signal});
+
+    const queryUrl = this.getQueryUrl(tile);
+    const attributes = fetch(queryUrl, {
+      propName: 'data',
+      layer: this,
+      loadOptions: {...loadOptions, mimeType: 'application/json'},
+      signal
+    });
 
     return Promise.all([geometry, attributes]);
   }
@@ -93,22 +143,22 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     // JOIN data
     const [geometry, attributes] = props.data;
 
-    // HACK remove all attributes from geometry request, except GEOID
-    // Final response will only include geometry data & GEOID
-    geometry.polygons.numericProps = {};
+    // // HACK remove all attributes from geometry request, except GEOID
+    // // Final response will only include geometry data & GEOID
+    // geometry.polygons.numericProps = {};
 
-    // HACK extract mapping
-    // Final response will be just this
-    const attrs = {};
-    // @ts-ignore
-    const properties = binaryToGeojson(attributes).map(f => f.properties);
-    const mapping = {};
-    for (const {GEOID, ...rest} of properties) {
-      mapping[GEOID] = rest;
-    }
+    // // HACK extract mapping
+    // // Final response will be just this
+    // const attrs = {};
+    // // @ts-ignore
+    // const properties = binaryToGeojson(attributes).map(f => f.properties);
+    // const mapping = {};
+    // for (const {GEOID, ...rest} of properties) {
+    //   mapping[GEOID] = rest;
+    // }
 
-    // Map across attribute data
-    geometry.polygons.properties = geometry.polygons.properties.map(({GEOID}) => mapping[GEOID]);
+    // // Map across attribute data
+    // geometry.polygons.properties = geometry.polygons.properties.map(({GEOID}) => mapping[GEOID]);
     props.data = geometry;
 
     const tileBbox = props.tile.bbox as any;
