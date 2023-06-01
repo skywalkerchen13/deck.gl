@@ -13,6 +13,9 @@ const COUNTRIES =
 const config = {
   snowflake: {
     zcta: 'CARTO_DEV_DATA.TILESETS.GEOGRAPHY_USA_ZCTA5_2019_TILESET_PROPERTIES2'
+  },
+  carto_dw: {
+    zcta: 'carto-dev-data.named_areas_tilesets.geography_usa_zcta5_2019_tileset' // :( MVT
   }
 };
 
@@ -100,8 +103,8 @@ function createCarto(connection, table, localCache) {
 
     // Styling
     getFillColor: d => {
-      const {total_pop} = d.properties;
-      return [total_pop % 255, (0.1 * total_pop) % 255, (0.01 * total_pop) % 255];
+      const total_pop = d.properties.total_pop / 100;
+      return [255 - total_pop, total_pop, 0];
     }
   });
 }
