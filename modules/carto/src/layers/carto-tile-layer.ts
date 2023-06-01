@@ -48,7 +48,7 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
 
   initializeState(): void {
     super.initializeState();
-    const binary = this.props.formatTiles === TILE_FORMATS.BINARY;
+    const binary = this.props.formatTiles === TILE_FORMATS.BINARY || TILE_FORMATS.MVT;
     this.setState({binary});
   }
 
@@ -111,14 +111,22 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
         ...loadOptions,
         mimeType: 'application/vnd.carto-vector-tile'
       };
+    } else if (formatTiles === TILE_FORMATS.MVT) {
+      loadOptions = {
+        ...loadOptions,
+        mimeType: 'application/x-protobuf',
+        mvt: {
+          ...loadOptions?.mvt,
+          coordinates: this.context.viewport.resolution ? 'wgs84' : 'local',
+          tileIndex: tile.index
+        },
+        gis: {format: 'binary'}
+      };
     }
 
     // Fetch geometry and attributes separately
-    // For now hacked to fetch the same tile data twice
     const geometry = fetch(url, {propName: 'data', layer: this, loadOptions, signal});
-
-    const queryUrl = this.getQueryUrl(tile);
-    const attributes = fetch(queryUrl, {
+    const attributes = fetch(this.getQueryUrl(tile), {
       propName: 'data',
       layer: this,
       loadOptions: {...loadOptions, mimeType: 'application/json'},
@@ -147,19 +155,20 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     // // Final response will only include geometry data & GEOID
     geometry.polygons.numericProps = {};
 
-    // // HACK extract mapping
-    // // Final response will be just this
-    // const attrs = {};
-    // // @ts-ignore
-    // const properties = binaryToGeojson(attributes).map(f => f.properties);
-
-    // // Map across attribute data
+    // Map across attribute data
     const mapping = {};
     for (const {geoid, ...rest} of attributes.rows) {
       mapping[geoid] = rest;
     }
-    geometry.polygons.properties = geometry.polygons.properties.map(({GEOID}) => mapping[GEOID]);
+
+    geometry.polygons.properties = geometry.polygons.properties.map(
+      ({geoid, GEOID}) => mapping[geoid] || mapping[GEOID]
+    );
     props.data = geometry;
+
+    if (this.props.formatTiles === TILE_FORMATS.MVT) {
+      return super.renderSubLayers(props);
+    }
 
     const tileBbox = props.tile.bbox as any;
     const {west, south, east, north} = tileBbox;

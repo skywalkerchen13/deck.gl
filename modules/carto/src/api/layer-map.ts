@@ -214,9 +214,10 @@ export function layerFromTileDataset(
   if (scheme === 'quadbin') {
     return QuadbinTileLayer;
   }
-  if (formatTiles === 'mvt') {
-    return MVTLayer;
-  }
+  // HACK force MVT rendering through CartoTileLayer
+  //if (formatTiles === 'mvt') {
+  //  return MVTLayer;
+  //}
 
   // formatTiles === BINARY|JSON|GEOJSON
   return CartoTileLayer;
