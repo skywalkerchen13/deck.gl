@@ -4,9 +4,10 @@ import {join} from 'path';
 import zlib from 'zlib';
 
 const rootDir = join(__dirname, '..');
+const CACHE_CONTROL = 'public,max-age=100000,must-revalidate';
 
 // Rewrite URLs in instantiation & tilejson response to use our endpoint
-const writeBody = (buffer, res) => {
+const writeBody = (buffer, res, proxyRes) => {
   let remoteBody = buffer.toString();
   const isMapInstantiation = remoteBody.includes('nrows');
   const endpoint = isMapInstantiation ? 'carto-api' : 'carto-data-api';
@@ -14,6 +15,10 @@ const writeBody = (buffer, res) => {
     'https://gcp-us-east1.api.carto.com/',
     `http://localhost:8080/${endpoint}/`
   ); // Point at non-selfHandleResponse endpoint
+
+  delete proxyRes.headers['content-encoding'];
+  delete proxyRes.headers['content-length'];
+  res.writeHead(proxyRes.statusCode, proxyRes.headers);
   res.write(remoteBody);
   res.end();
 };
@@ -48,7 +53,7 @@ export default defineConfig(async () => {
           rewrite: path => path.replace(/^\/carto-api/, ''),
           configure: proxy => {
             proxy.on('proxyRes', (proxyRes, req, res) => {
-              proxyRes.headers['cache-control'] = 'public,max-age=100000,must-revalidate';
+              proxyRes.headers['cache-control'] = CACHE_CONTROL;
 
               // Modify response for tilejson to update URLs
               let body = [];
@@ -62,13 +67,13 @@ export default defineConfig(async () => {
                 if (proxyRes.headers['content-encoding']) {
                   zlib.unzip(body, (err, buffer) => {
                     if (!err) {
-                      writeBody(buffer, res);
+                      writeBody(buffer, res, proxyRes);
                     } else {
                       console.error(err);
                     }
                   });
                 } else {
-                  writeBody(body, res);
+                  writeBody(body, res, proxyRes);
                 }
               });
             });
@@ -80,7 +85,7 @@ export default defineConfig(async () => {
           rewrite: path => path.replace(/^\/carto-data-api/, ''),
           configure: proxy => {
             proxy.on('proxyRes', (proxyRes, req, res) => {
-              proxyRes.headers['cache-control'] = 'public,max-age=100000,must-revalidate';
+              proxyRes.headers['cache-control'] = CACHE_CONTROL;
             });
           }
         }
