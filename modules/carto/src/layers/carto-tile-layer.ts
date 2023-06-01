@@ -145,20 +145,20 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
 
     // // HACK remove all attributes from geometry request, except GEOID
     // // Final response will only include geometry data & GEOID
-    // geometry.polygons.numericProps = {};
+    geometry.polygons.numericProps = {};
 
     // // HACK extract mapping
     // // Final response will be just this
     // const attrs = {};
     // // @ts-ignore
     // const properties = binaryToGeojson(attributes).map(f => f.properties);
-    // const mapping = {};
-    // for (const {GEOID, ...rest} of properties) {
-    //   mapping[GEOID] = rest;
-    // }
 
     // // Map across attribute data
-    // geometry.polygons.properties = geometry.polygons.properties.map(({GEOID}) => mapping[GEOID]);
+    const mapping = {};
+    for (const {geoid, ...rest} of attributes.rows) {
+      mapping[geoid] = rest;
+    }
+    geometry.polygons.properties = geometry.polygons.properties.map(({GEOID}) => mapping[GEOID]);
     props.data = geometry;
 
     const tileBbox = props.tile.bbox as any;

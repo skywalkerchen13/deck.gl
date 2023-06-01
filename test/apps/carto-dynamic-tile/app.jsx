@@ -16,7 +16,8 @@ const config = {
   }
 };
 
-const accessToken = 'XXX';
+const accessToken =
+  'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRVNGNZTHAwaThjYnVMNkd0LTE0diJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImZwYWxtZXJAY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfN3hoZnd5bWwiLCJpc3MiOiJodHRwczovL2F1dGguY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA3OTY5NjU1OTI5NjExMjIxNDg2IiwiYXVkIjoiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImlhdCI6MTY4NTU0MTQyOSwiZXhwIjoxNjg1NjI3ODI5LCJhenAiOiJBdHh2SERldVhsUjhYUGZGMm5qMlV2MkkyOXB2bUN4dSIsInBlcm1pc3Npb25zIjpbImV4ZWN1dGU6d29ya2Zsb3dzIiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInJlYWQ6d29ya2Zsb3dzIiwidXBkYXRlOmN1cnJlbnRfdXNlciIsIndyaXRlOmFwcHMiLCJ3cml0ZTpjYXJ0by1kdy1ncmFudHMiLCJ3cml0ZTpjb25uZWN0aW9ucyIsIndyaXRlOmltcG9ydHMiLCJ3cml0ZTptYXBzIiwid3JpdGU6dG9rZW5zIiwid3JpdGU6d29ya2Zsb3dzIl19.acrrEFb0TEbJwMCVqmP7fiae0cQ0p8VO28JkkbccOoct03q58ZV5fFwRZuvY3wKwzSg4CYWWwlygMmrVqLGQspeLz-fKB3r3cbyemNDqwBfkr-QcBmZ1Kb0RlKIp58MSAZchYJ0H2tNaubW5Dx6t_Y8hiHxWl__0ZtsWQ7aLSiffduoc4shYSAnfrqsOL4iitvLg4YmpHv_5zrKwDMbRUZWo3nxU9fSGnNaaXqI8cBoKsnP6ywEFRTfEfieZ1FWewVR8J0JK2rtUrAd-L4XX9s4e1TWtC0_0OzuD3Bo-kIKbkq10RpzKqxnk3WNw_yf04JHtPkherefl88YwVV3rVA';
 
 const showBasemap = true;
 const showCarto = true;
@@ -99,8 +100,8 @@ function createCarto(connection, table, localCache) {
 
     // Styling
     getFillColor: d => {
-      const area = d.properties.DO_AREA / 1000000;
-      return [area % 255, (0.1 * area) % 255, (0.01 * area) % 255];
+      const {total_pop} = d.properties;
+      return [total_pop % 255, (0.1 * total_pop) % 255, (0.01 * total_pop) % 255];
     }
   });
 }
