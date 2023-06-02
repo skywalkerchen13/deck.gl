@@ -93,9 +93,12 @@ function createCarto(connection, tileset, localCache) {
     credentials: {accessToken, apiBaseUrl},
 
     // Named areas props
-    data: tileset, // Specify the tileset from which to fetch the geometry. Must include uniqueIdProperty column. All other columns will be ignored
-    uniqueIdProperty: 'geoid', // Required to perform the spatial JOIN
     type: MAP_TYPES.TILESET,
+    uniqueIdProperty: 'geoid', // Property on which to perform the spatial JOIN
+    data: tileset, // Specify the tileset from which to fetch the columns. Must include columns specified in `columns`
+    columns: ['total_pop'], // Columns to fetch from tileset specified in `data` prop
+    // columns: ['poverty', 'total_pop', 'gini_index'],
+    geoColumn: `namedArea:${tileset}`, // Named area geometry source. Must be a tileset with a `uniqueIdProperty` column. All other columns will be ignored.
 
     // autohighlight
     pickable: true,

@@ -64,8 +64,7 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     const Partitioner = new GilbertPartition(partitions, zRange, zMaxBbox);
     const p = Partitioner.getPartition({z, x, y});
 
-    const {uniqueIdProperty} = this.props;
-    const columns = ['total_pop'];
+    const {uniqueIdProperty, columns} = this.props;
     const dataQuery = `select ${uniqueIdProperty}, ${columns.join(
       ', '
     )} FROM carto-dev-data.named_areas_tilesets.sub_usa_acs_demographics_sociodemographics_usa_zcta5_2015_5yrs_20112015`;
