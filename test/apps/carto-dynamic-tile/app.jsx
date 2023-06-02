@@ -19,6 +19,15 @@ const config = {
     }
   }
 };
+const COLUMNS = {
+  family_households: false,
+  four_more_cars: false,
+  gini_index: false,
+  in_school: false,
+  poverty: false,
+  total_pop: true,
+  walked_to_work: false
+};
 
 const accessToken =
   'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRVNGNZTHAwaThjYnVMNkd0LTE0diJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImZwYWxtZXJAY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfN3hoZnd5bWwiLCJpc3MiOiJodHRwczovL2F1dGguY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA3OTY5NjU1OTI5NjExMjIxNDg2IiwiYXVkIjoiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImlhdCI6MTY4NTY5NTM0NSwiZXhwIjoxNjg1NzgxNzQ1LCJhenAiOiJBdHh2SERldVhsUjhYUGZGMm5qMlV2MkkyOXB2bUN4dSIsInBlcm1pc3Npb25zIjpbImV4ZWN1dGU6d29ya2Zsb3dzIiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInJlYWQ6d29ya2Zsb3dzIiwidXBkYXRlOmN1cnJlbnRfdXNlciIsIndyaXRlOmFwcHMiLCJ3cml0ZTpjYXJ0by1kdy1ncmFudHMiLCJ3cml0ZTpjb25uZWN0aW9ucyIsIndyaXRlOmltcG9ydHMiLCJ3cml0ZTptYXBzIiwid3JpdGU6dG9rZW5zIiwid3JpdGU6d29ya2Zsb3dzIl19.LwxChIm79c8O0hCQBFBlTjeLVI4DiCuEEiqekxMRilaQ__P-ETBCfZkCTTCyG2-Kvmd93_PrbXirKUHtQsjxPtVgz_KkEV8iq6nEpamQWCpZ2QPs-yO--RSAAaqO2kvzkbhcWmf-TISFPdqb93_RwEpNd1a99gBvFmMxl74W3Qq76Sa1ZQDxYh6R4w2uiKMCfh1TLCEooUMJ8mQyuumwBzdsLsIZMM52VagzwZHPaBRZ9rHvgmS_jZMQkHQxqZhS8vHmaE49aItipS2v8llEk55oMsmh4dJxlkIZUI3fugrYI00JZKQ8i2Xogwc4NxPKNNaSnahgW-zgt9v_T5gzyg';
@@ -36,6 +45,7 @@ function getTooltip({object}) {
 }
 
 function Root() {
+  const [columns, setColumns] = useState(COLUMNS);
   const [connection, setConnection] = useState('carto_dw');
   const [localCache, setLocalCache] = useState(true);
   const [dataset, setDataset] = useState('zcta');
@@ -47,7 +57,7 @@ function Root() {
         controller={true}
         layers={[
           showBasemap && createBasemap(),
-          showCarto && createCarto(connection, datasources, localCache)
+          showCarto && createCarto(connection, datasources, columns, localCache)
         ]}
         getTooltip={getTooltip}
       />
@@ -67,6 +77,12 @@ function Root() {
         obj={Object.keys(config[connection])}
         value={dataset}
         onSelect={setDataset}
+      />
+      <MultiSelect
+        obj={COLUMNS}
+        onChange={e => {
+          setColumns({...e});
+        }}
       />
       <button
         style={{position: 'relative', margin: 3}}
@@ -95,7 +111,7 @@ function createBasemap() {
 }
 
 // Add aggregation expressions
-function createCarto(connection, datasources, localCache) {
+function createCarto(connection, datasources, columns, localCache) {
   // Use local cache to speed up API. See `examples/vite.config.local.mjs`
   const apiBaseUrl = localCache ? '/carto-api' : 'https://gcp-us-east1.api.carto.com';
   const {geometryTileset, attributeTileset} = datasources;
@@ -108,8 +124,7 @@ function createCarto(connection, datasources, localCache) {
     type: MAP_TYPES.TILESET,
     uniqueIdProperty: 'geoid', // Property on which to perform the spatial JOIN
     data: attributeTileset, // Specify the tileset from which to fetch the columns. Must include columns specified in `columns`
-    columns: ['total_pop'], // Columns to fetch from tileset specified in `data` prop
-    // columns: ['poverty', 'total_pop', 'gini_index'],
+    columns: trueKeys(columns), // Columns to fetch from tileset specified in `data` prop
     geoColumn: `namedArea:${geometryTileset}`, // Named area geometry source. Must be a tileset with a `uniqueIdProperty` column. All other columns will be ignored.
 
     // Styling
@@ -140,6 +155,47 @@ function ObjectSelect({title, obj, value, onSelect}) {
       <br></br>
     </>
   );
+}
+
+const boxStyle = {
+  position: 'relative',
+  background: 'rgba(255, 255, 255, 0.9)',
+  padding: '4px 8px',
+  margin: 3,
+  width: 150
+};
+function MultiSelect({obj, onChange}) {
+  return (
+    <div style={boxStyle}>
+      {Object.entries(obj).map(([key, value]) => (
+        <Checkbox
+          key={key}
+          label={key}
+          value={value}
+          onChange={e => {
+            obj[key] = e.target.checked;
+            onChange(obj);
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Checkbox({label, value, onChange}) {
+  return (
+    <label>
+      {label}:
+      <input type="checkbox" checked={value} onChange={onChange} />
+      <br />
+    </label>
+  );
+}
+
+function trueKeys(obj) {
+  return Object.entries(obj)
+    .filter(([k, v]) => v)
+    .map(([k, v]) => k);
 }
 
 const container = document.body.appendChild(document.createElement('div'));
