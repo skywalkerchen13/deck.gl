@@ -213,6 +213,14 @@ export async function mapInstantiation({
   queryParameters
 }: FetchLayerDataParams): Promise<MapInstantiation> {
   const baseUrl = `${credentials.mapsUrl}/${connection}/${type}`;
+
+  // Named areas, extract geometry tileset from geoColumn
+  if (geoColumn && geoColumn.split(':')[0] === 'namedArea') {
+    source = geoColumn.split(':')[1];
+    columns = undefined;
+    geoColumn = undefined;
+  }
+
   const parameters = getParameters({
     type,
     source,
@@ -223,6 +231,7 @@ export async function mapInstantiation({
     aggregationExp,
     queryParameters
   });
+
   const encodedParameters = Object.entries(parameters).map(([key, value]) => {
     if (typeof value !== 'string') {
       value = JSON.stringify(value);
