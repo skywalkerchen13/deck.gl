@@ -64,7 +64,7 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     const Partitioner = new GilbertPartition(partitions, zRange, zMaxBbox);
     const p = Partitioner.getPartition({z, x, y});
 
-    const uniqueIdProperty = 'geoid';
+    const {uniqueIdProperty} = this.props;
     const columns = ['total_pop'];
     const dataQuery = `select ${uniqueIdProperty}, ${columns.join(
       ', '

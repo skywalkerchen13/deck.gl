@@ -93,7 +93,8 @@ function createCarto(connection, table, localCache) {
     data: table,
     credentials: {accessToken, apiBaseUrl},
 
-    // Dynamic tiling. Request TILEJSON format with TABLE
+    // Named areas props
+    uniqueIdProperty: 'geoid', // Required to perform the spatial JOIN
     type: MAP_TYPES.TILESET,
 
     // autohighlight
