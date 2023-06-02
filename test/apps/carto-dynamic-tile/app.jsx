@@ -29,7 +29,7 @@ function Root() {
   const [connection, setConnection] = useState('carto_dw');
   const [localCache, setLocalCache] = useState(true);
   const [dataset, setDataset] = useState('zcta');
-  const table = config[connection][dataset];
+  const tileset = config[connection][dataset];
   return (
     <>
       <DeckGL
@@ -37,7 +37,7 @@ function Root() {
         controller={true}
         layers={[
           showBasemap && createBasemap(),
-          showCarto && createCarto(connection, table, localCache)
+          showCarto && createCarto(connection, tileset, localCache)
         ]}
       />
       <ObjectSelect
@@ -84,16 +84,16 @@ function createBasemap() {
 }
 
 // Add aggregation expressions
-function createCarto(connection, table, localCache) {
+function createCarto(connection, tileset, localCache) {
   // Use local cache to speed up API. See `examples/vite.config.local.mjs`
   const apiBaseUrl = localCache ? '/carto-api' : 'https://gcp-us-east1.api.carto.com';
   return new CartoLayer({
     id: 'carto',
     connection,
-    data: table,
     credentials: {accessToken, apiBaseUrl},
 
     // Named areas props
+    data: tileset, // Specify the tileset from which to fetch the geometry. Must include uniqueIdProperty column. All other columns will be ignored
     uniqueIdProperty: 'geoid', // Required to perform the spatial JOIN
     type: MAP_TYPES.TILESET,
 
