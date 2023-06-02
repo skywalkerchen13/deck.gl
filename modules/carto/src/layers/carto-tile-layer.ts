@@ -111,7 +111,6 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
 
     // Fetch geometry and attributes separately
     const geometry = fetch(url, {propName: 'data', layer: this, loadOptions, signal});
-
     const attributes = fetch(this.getQueryUrl(tile, this.state.data[0]), {
       propName: 'data',
       layer: this,
@@ -137,16 +136,14 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     // JOIN data
     const [geometry, attributes] = props.data;
 
-    // // HACK remove all attributes from geometry request, except GEOID
-    // // Final response will only include geometry data & GEOID
-    geometry.polygons.numericProps = {};
-
     // Map across attribute data
+    // TODO may want to rethink this depending on data format & time series
     const mapping = {};
     for (const {geoid, ...rest} of attributes.rows) {
       mapping[geoid] = rest;
     }
 
+    // TODO only supporting polygons?
     geometry.polygons.properties = geometry.polygons.properties.map(
       ({geoid, GEOID}) => mapping[geoid] || mapping[GEOID]
     );
