@@ -103,24 +103,12 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     const {fetch, formatTiles} = this.props;
     const {signal} = tile;
 
-    // The backend doesn't yet support our custom mime-type, so force it here
-    // TODO remove once backend sends the correct mime-type
     if (formatTiles === TILE_FORMATS.BINARY) {
-      loadOptions = {
-        ...loadOptions,
-        mimeType: 'application/vnd.carto-vector-tile'
-      };
+      // The backend doesn't yet support our custom mime-type, so force it here
+      // TODO remove once backend sends the correct mime-type
+      loadOptions = {...loadOptions, mimeType: 'application/vnd.carto-vector-tile'};
     } else if (formatTiles === TILE_FORMATS.MVT) {
-      loadOptions = {
-        ...loadOptions,
-        mimeType: 'application/x-protobuf',
-        mvt: {
-          ...loadOptions?.mvt,
-          coordinates: this.context.viewport.resolution ? 'wgs84' : 'local',
-          tileIndex: tile.index
-        },
-        gis: {format: 'binary'}
-      };
+      loadOptions = {...loadOptions, gis: {format: 'binary'}};
     }
 
     // Fetch geometry and attributes separately
