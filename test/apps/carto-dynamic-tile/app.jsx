@@ -12,7 +12,11 @@ const COUNTRIES =
 
 const config = {
   carto_dw: {
-    zcta: 'carto-dev-data.named_areas_tilesets.geography_usa_zcta5_2019_tileset'
+    zcta: {
+      geometryTileset: 'carto-dev-data.named_areas_tilesets.geography_usa_zcta5_2019_tileset',
+      attributeTileset:
+        'carto-dev-data.named_areas_tilesets.sub_usa_acs_demographics_sociodemographics_usa_zcta5_2015_5yrs_20112015'
+    }
   }
 };
 
@@ -35,7 +39,7 @@ function Root() {
   const [connection, setConnection] = useState('carto_dw');
   const [localCache, setLocalCache] = useState(true);
   const [dataset, setDataset] = useState('zcta');
-  const tileset = config[connection][dataset];
+  const datasources = config[connection][dataset];
   return (
     <>
       <DeckGL
@@ -43,7 +47,7 @@ function Root() {
         controller={true}
         layers={[
           showBasemap && createBasemap(),
-          showCarto && createCarto(connection, tileset, localCache)
+          showCarto && createCarto(connection, datasources, localCache)
         ]}
         getTooltip={getTooltip}
       />
@@ -91,9 +95,10 @@ function createBasemap() {
 }
 
 // Add aggregation expressions
-function createCarto(connection, tileset, localCache) {
+function createCarto(connection, datasources, localCache) {
   // Use local cache to speed up API. See `examples/vite.config.local.mjs`
   const apiBaseUrl = localCache ? '/carto-api' : 'https://gcp-us-east1.api.carto.com';
+  const {geometryTileset, attributeTileset} = datasources;
   return new CartoLayer({
     id: 'carto',
     connection,
@@ -102,17 +107,13 @@ function createCarto(connection, tileset, localCache) {
     // Named areas props
     type: MAP_TYPES.TILESET,
     uniqueIdProperty: 'geoid', // Property on which to perform the spatial JOIN
-    data: 'carto-dev-data.named_areas_tilesets.sub_usa_acs_demographics_sociodemographics_usa_zcta5_2015_5yrs_20112015', // Specify the tileset from which to fetch the columns. Must include columns specified in `columns`
+    data: attributeTileset, // Specify the tileset from which to fetch the columns. Must include columns specified in `columns`
     columns: ['total_pop'], // Columns to fetch from tileset specified in `data` prop
     // columns: ['poverty', 'total_pop', 'gini_index'],
-    geoColumn: `namedArea:${tileset}`, // Named area geometry source. Must be a tileset with a `uniqueIdProperty` column. All other columns will be ignored.
-
-    // autohighlight
-    pickable: true,
-    autoHighlight: true,
-    highlightColor: [33, 77, 255, 255],
+    geoColumn: `namedArea:${geometryTileset}`, // Named area geometry source. Must be a tileset with a `uniqueIdProperty` column. All other columns will be ignored.
 
     // Styling
+    pickable: true,
     getFillColor: d => {
       const total_pop = d.properties.total_pop / 100;
       return [255 - total_pop, total_pop, 0];
