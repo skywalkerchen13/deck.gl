@@ -52,12 +52,11 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     this.setState({binary});
   }
 
-  getQueryUrl(tile: TileLoadProps) {
+  getQueryUrl(tile: TileLoadProps, partition: string) {
     // const tileset = this.props.data.name;
     const tileset = 'carto-dev-data.named_areas_tilesets.geography_usa_zcta5_2019_tileset';
     const {x, y, z} = tile.index;
 
-    const partition = '0_12_37_3708_870_2214_3999_1';
     const [zmin, zmax, xmin, xmax, ymin, ymax, partitions, zstep] = partition.split('_');
     const zRange = {zmin, zmax, zstep};
     const zMaxBbox = {xmin, xmax, ymin, ymax};
@@ -113,7 +112,9 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
 
     // Fetch geometry and attributes separately
     const geometry = fetch(url, {propName: 'data', layer: this, loadOptions, signal});
-    const attributes = fetch(this.getQueryUrl(tile), {
+
+    const partition = new URL(this.state.data[0]).searchParams.get('partition');
+    const attributes = fetch(this.getQueryUrl(tile, partition), {
       propName: 'data',
       layer: this,
       loadOptions: {...loadOptions, mimeType: 'application/json'},
