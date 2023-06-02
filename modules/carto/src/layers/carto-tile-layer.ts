@@ -53,8 +53,20 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
   }
 
   // HACK: This logic will be performed at the API level in the future
-  getQueryUrl(tile: TileLoadProps, partition: string) {
-    const tileset = 'carto-dev-data.named_areas_tilesets.geography_usa_zcta5_2019_tileset';
+  getQueryUrl(tile: TileLoadProps, tilesetUrl: string) {
+    // These parameters will be passed up to the API
+    const {
+      credentials: {apiBaseUrl},
+      connection,
+      columns,
+      data,
+      uniqueIdProperty
+    } = this.parent.props;
+    const searchParams = new URL(tilesetUrl).searchParams;
+    const tileset = searchParams.get('name');
+    const partition = searchParams.get('partition');
+
+    // Construction of query will be done server-side
     const {x, y, z} = tile.index;
 
     const [zmin, zmax, xmin, xmax, ymin, ymax, partitions, zstep] = partition.split('_');
@@ -63,9 +75,7 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     const Partitioner = new GilbertPartition(partitions, zRange, zMaxBbox);
     const p = Partitioner.getPartition({z, x, y});
 
-    const {columns, data, uniqueIdProperty} = this.parent.props;
     const dataQuery = `select ${uniqueIdProperty}, ${columns.join(', ')} FROM ${data}`;
-
     const spatialFilter = `z=${z} AND y=${y} AND x=${x} AND carto_partition=${p}`;
     const query = `
     WITH ids AS (
@@ -78,13 +88,7 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
       WHERE a.${uniqueIdProperty} IN (select * from unnest(ids.geoids))
     `;
 
-    const {
-      connection,
-      credentials: {apiBaseUrl}
-    } = this.props;
-    const queryUrl = `${apiBaseUrl}/v3/sql/${connection}/query?q=${encodeURI(query)}`;
-
-    return queryUrl;
+    return `${apiBaseUrl}/v3/sql/${connection}/query?q=${encodeURI(query)}`;
   }
 
   getTileData(tile: TileLoadProps) {
@@ -108,8 +112,7 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     // Fetch geometry and attributes separately
     const geometry = fetch(url, {propName: 'data', layer: this, loadOptions, signal});
 
-    const partition = new URL(this.state.data[0]).searchParams.get('partition');
-    const attributes = fetch(this.getQueryUrl(tile, partition), {
+    const attributes = fetch(this.getQueryUrl(tile, this.state.data[0]), {
       propName: 'data',
       layer: this,
       loadOptions: {...loadOptions, mimeType: 'application/json'},
