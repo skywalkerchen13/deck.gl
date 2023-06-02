@@ -52,8 +52,8 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     this.setState({binary});
   }
 
+  // HACK: This logic will be performed at the API level in the future
   getQueryUrl(tile: TileLoadProps, partition: string) {
-    // const tileset = this.props.data.name;
     const tileset = 'carto-dev-data.named_areas_tilesets.geography_usa_zcta5_2019_tileset';
     const {x, y, z} = tile.index;
 
@@ -63,30 +63,25 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     const Partitioner = new GilbertPartition(partitions, zRange, zMaxBbox);
     const p = Partitioner.getPartition({z, x, y});
 
-    const {uniqueIdProperty, columns} = this.props;
-    const dataQuery = `select ${uniqueIdProperty}, ${columns.join(
-      ', '
-    )} FROM carto-dev-data.named_areas_tilesets.sub_usa_acs_demographics_sociodemographics_usa_zcta5_2015_5yrs_20112015`;
+    const {columns, data, uniqueIdProperty} = this.parent.props;
+    const dataQuery = `select ${uniqueIdProperty}, ${columns.join(', ')} FROM ${data}`;
 
+    const spatialFilter = `z=${z} AND y=${y} AND x=${x} AND carto_partition=${p}`;
     const query = `
     WITH ids AS (
-      SELECT geoids
-        FROM ${tileset}
-        WHERE z=${z} AND y=${y} AND x=${x} AND carto_partition=${p}
+      SELECT geoids FROM ${tileset} WHERE ${spatialFilter}
     ), data_source AS (
       ${dataQuery}
     )
 
     SELECT ${uniqueIdProperty}, ${columns.join(', ')} FROM data_source a, ids
-     WHERE a.${uniqueIdProperty} IN (select * from unnest(ids.geoids))
+      WHERE a.${uniqueIdProperty} IN (select * from unnest(ids.geoids))
     `;
 
-    // Construct request to query API
     const {
-      //connection,
+      connection,
       credentials: {apiBaseUrl}
     } = this.props;
-    const connection = 'carto_dw';
     const queryUrl = `${apiBaseUrl}/v3/sql/${connection}/query?q=${encodeURI(query)}`;
 
     return queryUrl;

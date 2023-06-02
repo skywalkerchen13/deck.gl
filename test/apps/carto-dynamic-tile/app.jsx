@@ -13,9 +13,6 @@ const COUNTRIES =
 const config = {
   carto_dw: {
     zcta: 'carto-dev-data.named_areas_tilesets.geography_usa_zcta5_2019_tileset'
-  },
-  snowflake: {
-    zcta: 'CARTO_DEV_DATA.TILESETS.GEOGRAPHY_USA_ZCTA5_2019_TILESET_PROPERTIES2'
   }
 };
 
@@ -95,7 +92,7 @@ function createCarto(connection, tileset, localCache) {
     // Named areas props
     type: MAP_TYPES.TILESET,
     uniqueIdProperty: 'geoid', // Property on which to perform the spatial JOIN
-    data: 'blah', // Specify the tileset from which to fetch the columns. Must include columns specified in `columns`
+    data: 'carto-dev-data.named_areas_tilesets.sub_usa_acs_demographics_sociodemographics_usa_zcta5_2015_5yrs_20112015', // Specify the tileset from which to fetch the columns. Must include columns specified in `columns`
     columns: ['total_pop'], // Columns to fetch from tileset specified in `data` prop
     // columns: ['poverty', 'total_pop', 'gini_index'],
     geoColumn: `namedArea:${tileset}`, // Named area geometry source. Must be a tileset with a `uniqueIdProperty` column. All other columns will be ignored.
