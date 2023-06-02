@@ -22,6 +22,15 @@ const accessToken =
 const showBasemap = true;
 const showCarto = true;
 
+function getTooltip({object}) {
+  if (!object) {
+    return null;
+  }
+  return Object.entries(object.properties)
+    .map(([k, v]) => `${k}: ${v}\n`)
+    .join('');
+}
+
 function Root() {
   const [connection, setConnection] = useState('carto_dw');
   const [localCache, setLocalCache] = useState(true);
@@ -36,6 +45,7 @@ function Root() {
           showBasemap && createBasemap(),
           showCarto && createCarto(connection, tileset, localCache)
         ]}
+        getTooltip={getTooltip}
       />
       <ObjectSelect
         title="connection"
