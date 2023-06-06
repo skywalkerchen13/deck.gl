@@ -91,7 +91,7 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     return `${apiBaseUrl}/v3/sql/${connection}/query?q=${encodeURI(query)}`;
   }
 
-  getTileData(tile: TileLoadProps) {
+  async getTileData(tile: TileLoadProps) {
     const url = _getURLFromTemplate(this.state.data, tile);
     if (!url) {
       return Promise.reject('Invalid URL');
@@ -110,15 +110,28 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     }
 
     // Fetch geometry and attributes separately
-    const geometry = fetch(url, {propName: 'data', layer: this, loadOptions, signal});
-    const attributes = fetch(this.getQueryUrl(tile, this.state.data[0]), {
+    const geometryFetch = fetch(url, {propName: 'data', layer: this, loadOptions, signal});
+    const attributesFetch = fetch(this.getQueryUrl(tile, this.state.data[0]), {
       propName: 'data',
       layer: this,
       loadOptions: {...loadOptions, mimeType: 'application/json'},
       signal
     });
+    const [geometry, attributes] = await Promise.all([geometryFetch, attributesFetch]);
+    if (!geometry) return null;
 
-    return Promise.all([geometry, attributes]);
+    // Map across attribute data
+    // TODO may want to rethink this depending on data format & time series
+    const mapping = {};
+    for (const {geoid, ...rest} of attributes.rows) {
+      mapping[geoid] = rest;
+    }
+
+    // TODO only supporting polygons?
+    geometry.polygons.properties = geometry.polygons.properties.map(
+      ({geoid, GEOID}) => mapping[geoid] || mapping[GEOID]
+    );
+    return geometry;
   }
 
   renderSubLayers(
@@ -132,22 +145,6 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     if (props.data === null || props.data[0] === null) {
       return null;
     }
-
-    // JOIN data
-    const [geometry, attributes] = props.data;
-
-    // Map across attribute data
-    // TODO may want to rethink this depending on data format & time series
-    const mapping = {};
-    for (const {geoid, ...rest} of attributes.rows) {
-      mapping[geoid] = rest;
-    }
-
-    // TODO only supporting polygons?
-    geometry.polygons.properties = geometry.polygons.properties.map(
-      ({geoid, GEOID}) => mapping[geoid] || mapping[GEOID]
-    );
-    props.data = geometry;
 
     if (this.props.formatTiles === TILE_FORMATS.MVT) {
       return super.renderSubLayers(props);
