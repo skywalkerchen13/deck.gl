@@ -142,7 +142,7 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
       tile: _Tile2DHeader;
     }
   ): GeoJsonLayer | null {
-    if (props.data === null || props.data[0] === null) {
+    if (props.data === null) {
       return null;
     }
 
