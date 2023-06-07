@@ -14,7 +14,7 @@ const config = {
   carto_dw: {
     zcta: {
       geometryTileset: 'carto-dev-data.named_areas_tilesets.geography_usa_zcta5_2019_tileset',
-      attributeTileset:
+      attributeTable:
         'carto-dev-data.named_areas_tilesets.sub_usa_acs_demographics_sociodemographics_usa_zcta5_2015_5yrs_20112015'
     }
   }
@@ -30,7 +30,7 @@ const COLUMNS = {
 };
 
 const accessToken =
-  'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRVNGNZTHAwaThjYnVMNkd0LTE0diJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImZwYWxtZXJAY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfN3hoZnd5bWwiLCJpc3MiOiJodHRwczovL2F1dGguY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA3OTY5NjU1OTI5NjExMjIxNDg2IiwiYXVkIjoiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImlhdCI6MTY4NTY5NTM0NSwiZXhwIjoxNjg1NzgxNzQ1LCJhenAiOiJBdHh2SERldVhsUjhYUGZGMm5qMlV2MkkyOXB2bUN4dSIsInBlcm1pc3Npb25zIjpbImV4ZWN1dGU6d29ya2Zsb3dzIiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInJlYWQ6d29ya2Zsb3dzIiwidXBkYXRlOmN1cnJlbnRfdXNlciIsIndyaXRlOmFwcHMiLCJ3cml0ZTpjYXJ0by1kdy1ncmFudHMiLCJ3cml0ZTpjb25uZWN0aW9ucyIsIndyaXRlOmltcG9ydHMiLCJ3cml0ZTptYXBzIiwid3JpdGU6dG9rZW5zIiwid3JpdGU6d29ya2Zsb3dzIl19.LwxChIm79c8O0hCQBFBlTjeLVI4DiCuEEiqekxMRilaQ__P-ETBCfZkCTTCyG2-Kvmd93_PrbXirKUHtQsjxPtVgz_KkEV8iq6nEpamQWCpZ2QPs-yO--RSAAaqO2kvzkbhcWmf-TISFPdqb93_RwEpNd1a99gBvFmMxl74W3Qq76Sa1ZQDxYh6R4w2uiKMCfh1TLCEooUMJ8mQyuumwBzdsLsIZMM52VagzwZHPaBRZ9rHvgmS_jZMQkHQxqZhS8vHmaE49aItipS2v8llEk55oMsmh4dJxlkIZUI3fugrYI00JZKQ8i2Xogwc4NxPKNNaSnahgW-zgt9v_T5gzyg';
+  'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRVNGNZTHAwaThjYnVMNkd0LTE0diJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImZwYWxtZXJAY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfN3hoZnd5bWwiLCJpc3MiOiJodHRwczovL2F1dGguY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA3OTY5NjU1OTI5NjExMjIxNDg2IiwiYXVkIjoiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImlhdCI6MTY4NjEzNDAzNCwiZXhwIjoxNjg2MjIwNDM0LCJhenAiOiJBdHh2SERldVhsUjhYUGZGMm5qMlV2MkkyOXB2bUN4dSIsInBlcm1pc3Npb25zIjpbImV4ZWN1dGU6d29ya2Zsb3dzIiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInJlYWQ6d29ya2Zsb3dzIiwidXBkYXRlOmN1cnJlbnRfdXNlciIsIndyaXRlOmFwcHMiLCJ3cml0ZTpjYXJ0by1kdy1ncmFudHMiLCJ3cml0ZTpjb25uZWN0aW9ucyIsIndyaXRlOmltcG9ydHMiLCJ3cml0ZTptYXBzIiwid3JpdGU6dG9rZW5zIiwid3JpdGU6d29ya2Zsb3dzIl19.ds9nfosANJNelmmqoIXgA0ay54k31cwAGo4s-Q1wpScWxcpEOXaHB45jvXSCsKvEP9ykxSfGoQlLy7QyZpIv4U4x7WAnw1R_48sBW8k_4wSyyJCv4axL8ph0aclhk1oUsD6AI6y-yIvEZK06f1RbxZMmoxzbk1FpIs6UZmoAlQyt0Z1tH0tnTxQfFBBM1AH7xelW_bcJfU7hRI7HUa1dA7F0O11m1zntZ30RQwnv56pUILnmZfexR00YwT7ZepuwS6AnPlg3xgTaT7mkZCeB533IvplNU1lCtpkiULHARUkflGs1QSYWJifTB0pLlqRCbL1I-QSlAqKxb6ebe3iPDQ';
 
 const showBasemap = true;
 const showCarto = true;
@@ -114,17 +114,17 @@ function createBasemap() {
 function createCarto(connection, datasources, columns, localCache) {
   // Use local cache to speed up API. See `examples/vite.config.local.mjs`
   const apiBaseUrl = localCache ? '/carto-api' : 'https://gcp-us-east1.api.carto.com';
-  const {geometryTileset, attributeTileset} = datasources;
+  const {geometryTileset, attributeTable} = datasources;
   return new CartoLayer({
     id: 'carto',
     connection,
     credentials: {accessToken, apiBaseUrl},
 
     // Named areas props
-    type: MAP_TYPES.TILESET,
+    type: MAP_TYPES.TABLE,
     uniqueIdProperty: 'geoid', // Property on which to perform the spatial JOIN
-    data: attributeTileset, // Specify the tileset from which to fetch the columns. Must include columns specified in `columns`
-    columns: trueKeys(columns), // Columns to fetch from tileset specified in `data` prop
+    data: attributeTable, // Specify the table from which to fetch the columns. Must include columns specified in `columns`
+    columns: trueKeys(columns), // Columns to fetch from table specified in `data` prop
     geoColumn: `namedArea:${geometryTileset}`, // Named area geometry source. Must be a tileset with a `uniqueIdProperty` column. All other columns will be ignored.
 
     // Styling
