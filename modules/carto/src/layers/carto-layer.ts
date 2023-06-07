@@ -236,7 +236,8 @@ export default class CartoLayer<ExtraProps extends {} = {}> extends CompositeLay
       JSON.stringify(props.queryParameters) !== JSON.stringify(oldProps.queryParameters);
 
     if (shouldUpdateData) {
-      this.setState({data: null, apiVersion: null});
+      // this.setState({data: null, apiVersion: null}); // Do we want this???
+      this.setState({apiVersion: null});
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this._updateData();
     }
