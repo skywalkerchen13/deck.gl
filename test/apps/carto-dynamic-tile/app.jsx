@@ -102,20 +102,13 @@ function Root() {
       >
         {localCache ? 'Use server data' : 'Use local cache'}
       </button>
-      <pre
-        style={{
-          background: 'rgba(255, 255, 255, 0.9)',
-          position: 'absolute',
-          padding: 4,
-          bottom: 0
-        }}
-      >
+      <pre style={{}}>
         {`CartoLayer({
   type: "${datasource.type}",
   uniqueIdProperty: "geoid",
   data: "${datasource.attributes}",
   columns: ${JSON.stringify(cols)},
-  geoColumn: "namedArea:${datasource.geometryTileset}"
+  geoColumn: "boundaries:${datasource.geometryTileset}"
 })`}
       </pre>
     </>
@@ -151,7 +144,7 @@ function createCarto(connection, datasource, columns, localCache) {
     uniqueIdProperty: 'geoid', // Property on which to perform the spatial JOIN
     data: attributes, // Specify the table from which to fetch the columns. Must include columns specified in `columns`
     columns, // Columns to fetch from table specified in `data` prop
-    geoColumn: `namedArea:${geometryTileset}`, // Named area geometry source. Must be a tileset with a `uniqueIdProperty` column. All other columns will be ignored.
+    geoColumn: `boundaries:${geometryTileset}`, // Named area geometry source. Must be a tileset with a `uniqueIdProperty` column. All other columns will be ignored.
 
     // Styling
     pickable: true,

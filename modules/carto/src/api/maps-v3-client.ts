@@ -213,7 +213,7 @@ export async function mapInstantiation({
   queryParameters
 }: FetchLayerDataParams): Promise<MapInstantiation> {
   // Named areas, extract geometry tileset from geoColumn
-  if (geoColumn && geoColumn.split(':')[0] === 'namedArea') {
+  if (geoColumn && geoColumn.split(':')[0] === 'boundaries') {
     source = geoColumn.split(':')[1];
     type = 'tileset';
     columns = undefined;
