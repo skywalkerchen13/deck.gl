@@ -64,18 +64,22 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
     } = this.parent.props;
     const searchParams = new URL(tilesetUrl).searchParams;
     const tileset = searchParams.get('name');
+    // const partition = '0_12_9_4094_868_2216_3999_1';
     const partition = searchParams.get('partition');
 
     // Construction of query will be done server-side
     const {x, y, z} = tile.index;
+    // const {x, y, z} = {x: 1006, y: 1539, z: 12};
 
     const [zmin, zmax, xmin, xmax, ymin, ymax, partitions, zstep] = partition.split('_');
     const zRange = {zmin, zmax, zstep};
     const zMaxBbox = {xmin, xmax, ymin, ymax};
     const Partitioner = new GilbertPartition(partitions, zRange, zMaxBbox);
     const p = Partitioner.getPartition({z, x, y});
+    // const p = 1895;
 
-    const dataQuery = `select ${uniqueIdProperty}, ${columns.join(', ')} FROM ${data}`;
+    //const dataQuery = `select ${uniqueIdProperty}, ${columns.join(', ')} FROM ${data}`;
+    const dataQuery = `select avg(txn_amt) as txn_amt, ${uniqueIdProperty} FROM ${data} WHERE do_date between '2022-08-01' and '2022-08-07' group by geoid`;
     const spatialFilter = `z=${z} AND y=${y} AND x=${x} AND carto_partition=${p}`;
     const query = `
     WITH ids AS (
@@ -84,9 +88,24 @@ export default class CartoTileLayer<ExtraProps extends {} = {}> extends MVTLayer
       ${dataQuery}
     )
 
-    SELECT ${uniqueIdProperty}, ${columns.join(', ')} FROM data_source a, ids
+    SELECT * FROM data_source a, ids
       WHERE a.${uniqueIdProperty} IN (select * from unnest(ids.geoids))
     `;
+
+    const query2 = `
+WITH ids AS (
+      SELECT geoids 
+        FROM carto-dev-data.named_areas_tilesets.geography_usa_blockgroup_2019_tileset
+        WHERE z=12 AND y=1539 AND x=1006 AND carto_partition=1563
+    ), data_source AS (
+      SELECT avg(txn_amt) as txn_amt, geoid
+    FROM carto-dev-data.private.financial_geographicinsights_usa_blockgroup_2015_daily_v1_partitioned
+    WHERE do_date between '2022-08-01' and '2022-08-07'
+    group by geoid
+    )
+
+    SELECT * FROM data_source a, ids
+     WHERE a.geoid IN (select * from unnest(ids.geoids))`;
 
     return `${apiBaseUrl}/v3/sql/${connection}/query?q=${encodeURI(query)}`;
   }

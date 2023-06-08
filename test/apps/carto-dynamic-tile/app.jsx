@@ -11,6 +11,13 @@ const COUNTRIES =
   'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_admin_0_scale_rank.geojson';
 
 const config = {
+  bigquery: {
+    blockgroup: {
+      geometryTileset: 'carto-dev-data.named_areas_tilesets.geography_usa_blockgroup_2019_tileset',
+      attributeTable:
+        'carto-dev-data.private.financial_geographicinsights_usa_blockgroup_2015_daily_v1_partitioned'
+    }
+  },
   carto_dw: {
     zcta: {
       geometryTileset: 'carto-dev-data.named_areas_tilesets.geography_usa_zcta5_2019_tileset',
@@ -30,7 +37,7 @@ const COLUMNS = {
 };
 
 const accessToken =
-  'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRVNGNZTHAwaThjYnVMNkd0LTE0diJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImZwYWxtZXJAY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfN3hoZnd5bWwiLCJpc3MiOiJodHRwczovL2F1dGguY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA3OTY5NjU1OTI5NjExMjIxNDg2IiwiYXVkIjoiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImlhdCI6MTY4NjEzNDAzNCwiZXhwIjoxNjg2MjIwNDM0LCJhenAiOiJBdHh2SERldVhsUjhYUGZGMm5qMlV2MkkyOXB2bUN4dSIsInBlcm1pc3Npb25zIjpbImV4ZWN1dGU6d29ya2Zsb3dzIiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInJlYWQ6d29ya2Zsb3dzIiwidXBkYXRlOmN1cnJlbnRfdXNlciIsIndyaXRlOmFwcHMiLCJ3cml0ZTpjYXJ0by1kdy1ncmFudHMiLCJ3cml0ZTpjb25uZWN0aW9ucyIsIndyaXRlOmltcG9ydHMiLCJ3cml0ZTptYXBzIiwid3JpdGU6dG9rZW5zIiwid3JpdGU6d29ya2Zsb3dzIl19.ds9nfosANJNelmmqoIXgA0ay54k31cwAGo4s-Q1wpScWxcpEOXaHB45jvXSCsKvEP9ykxSfGoQlLy7QyZpIv4U4x7WAnw1R_48sBW8k_4wSyyJCv4axL8ph0aclhk1oUsD6AI6y-yIvEZK06f1RbxZMmoxzbk1FpIs6UZmoAlQyt0Z1tH0tnTxQfFBBM1AH7xelW_bcJfU7hRI7HUa1dA7F0O11m1zntZ30RQwnv56pUILnmZfexR00YwT7ZepuwS6AnPlg3xgTaT7mkZCeB533IvplNU1lCtpkiULHARUkflGs1QSYWJifTB0pLlqRCbL1I-QSlAqKxb6ebe3iPDQ';
+  'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRVNGNZTHAwaThjYnVMNkd0LTE0diJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImFsYmVydG9AY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfN3hoZnd5bWwiLCJpc3MiOiJodHRwczovL2F1dGguY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA4NDA5NTYzMzQxMzU5MDQxNjg0IiwiYXVkIjpbImNhcnRvLWNsb3VkLW5hdGl2ZS1hcGkiLCJodHRwczovL2NhcnRvLXByb2R1Y3Rpb24udXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTY4NjIwNTQ1NiwiZXhwIjoxNjg2MjkxODU2LCJhenAiOiJqQ1duSEs2RTJLMmFPeTlqTHkzTzdaTXBocUdPOUJQTCIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwgcmVhZDpjdXJyZW50X3VzZXIgdXBkYXRlOmN1cnJlbnRfdXNlciByZWFkOmNvbm5lY3Rpb25zIHdyaXRlOmNvbm5lY3Rpb25zIHJlYWQ6bWFwcyB3cml0ZTptYXBzIHJlYWQ6YWNjb3VudCBhZG1pbjphY2NvdW50IiwicGVybWlzc2lvbnMiOlsiYWRtaW46YWNjb3VudCIsImV4ZWN1dGU6d29ya2Zsb3dzIiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInJlYWQ6d29ya2Zsb3dzIiwidXBkYXRlOmN1cnJlbnRfdXNlciIsIndyaXRlOmFwcHMiLCJ3cml0ZTpjYXJ0by1kdy1ncmFudHMiLCJ3cml0ZTpjb25uZWN0aW9ucyIsIndyaXRlOmltcG9ydHMiLCJ3cml0ZTpsaXN0ZWRfYXBwcyIsIndyaXRlOm1hcHMiLCJ3cml0ZTp0b2tlbnMiLCJ3cml0ZTp3b3JrZmxvd3MiXX0.PckstP6SsmvtAuGkDk5IJzr0FlD2D7P9fcapBzxnZJw5evQYk59Q0dfQBggsxDkVteML6pq6QaN9nR9e5kbsLcm1y4u1GPl7iqTKWEC8vAC-rJXLN0FHcSxneBw3MWwwgGD9QdE5YQPxjSbpYUFd4YgXDTRw3fsAcUVWheNm6sBuOLPuYnsMKhvFK-wRrmTHfdQNbjA3St1e8IyErRn7cIDeVso9Z8G8Y_3V2-oRX3mzDUOehf52guNifQAZhAZiRY7V6fFvEXJKoklLaQVz2wdVWEu0xg7h2tFOpac48kfFJ8t4QpbXhdbyjBlGStVmlOpBvipPN9ynqudDWcZGCw';
 
 const showBasemap = true;
 const showCarto = true;
@@ -46,9 +53,9 @@ function getTooltip({object}) {
 
 function Root() {
   const [columns, setColumns] = useState(COLUMNS);
-  const [connection, setConnection] = useState('carto_dw');
+  const [connection, setConnection] = useState('bigquery');
   const [localCache, setLocalCache] = useState(true);
-  const [dataset, setDataset] = useState('zcta');
+  const [dataset, setDataset] = useState('blockgroup');
   const datasources = config[connection][dataset];
   return (
     <>
@@ -130,7 +137,7 @@ function createCarto(connection, datasources, columns, localCache) {
     // Styling
     pickable: true,
     getFillColor: d => {
-      const total_pop = d.properties.total_pop / 100;
+      const total_pop = d.properties.txn_amt / 4;
       return [255 - total_pop, total_pop, 0];
     }
   });
