@@ -6,33 +6,35 @@ import DeckGL from '@deck.gl/react';
 import {CartoLayer, FORMATS, MAP_TYPES} from '@deck.gl/carto';
 import {GeoJsonLayer} from '@deck.gl/layers';
 
-const INITIAL_VIEW_STATE = {longitude: -100, latitude: 45, zoom: 4};
+const INITIAL_VIEW_STATE = {longitude: -70, latitude: 45, zoom: 7};
 const COUNTRIES =
   'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_admin_0_scale_rank.geojson';
 
 const config = {
   bigquery: {
     blockgroup: {
+      attributes: `select avg(txn_amt) as txn_amt, geoid FROM carto-dev-data.private.financial_geographicinsights_usa_blockgroup_2015_daily_v1_partitioned WHERE do_date between '2022-08-01' and '2022-08-07' group by geoid`,
       geometryTileset: 'carto-dev-data.named_areas_tilesets.geography_usa_blockgroup_2019_tileset',
-      attributeTable:
-        'carto-dev-data.private.financial_geographicinsights_usa_blockgroup_2015_daily_v1_partitioned'
+      type: MAP_TYPES.QUERY
     }
   },
   carto_dw: {
     zcta: {
+      attributes:
+        'carto-dev-data.named_areas_tilesets.sub_usa_acs_demographics_sociodemographics_usa_zcta5_2015_5yrs_20112015',
       geometryTileset: 'carto-dev-data.named_areas_tilesets.geography_usa_zcta5_2019_tileset',
-      attributeTable:
-        'carto-dev-data.named_areas_tilesets.sub_usa_acs_demographics_sociodemographics_usa_zcta5_2015_5yrs_20112015'
+      type: MAP_TYPES.TABLE
     }
   }
 };
 const COLUMNS = {
+  txn_amt: true,
   family_households: false,
   four_more_cars: false,
   gini_index: false,
   in_school: false,
   poverty: false,
-  total_pop: true,
+  total_pop: false,
   walked_to_work: false
 };
 
@@ -56,7 +58,8 @@ function Root() {
   const [connection, setConnection] = useState('bigquery');
   const [localCache, setLocalCache] = useState(true);
   const [dataset, setDataset] = useState('blockgroup');
-  const datasources = config[connection][dataset];
+  const datasource = config[connection][dataset];
+  const cols = trueKeys(columns);
   return (
     <>
       <DeckGL
@@ -64,7 +67,7 @@ function Root() {
         controller={true}
         layers={[
           showBasemap && createBasemap(),
-          showCarto && createCarto(connection, datasources, columns, localCache)
+          showCarto && createCarto(connection, datasource, cols, localCache)
         ]}
         getTooltip={getTooltip}
       />
@@ -99,6 +102,22 @@ function Root() {
       >
         {localCache ? 'Use server data' : 'Use local cache'}
       </button>
+      <pre
+        style={{
+          background: 'rgba(255, 255, 255, 0.9)',
+          position: 'absolute',
+          padding: 4,
+          bottom: 0
+        }}
+      >
+        {`CartoLayer({
+  type: "${datasource.type}",
+  uniqueIdProperty: "geoid",
+  data: "${datasource.attributes}",
+  columns: ${JSON.stringify(cols)},
+  geoColumn: "namedArea:${datasource.geometryTileset}"
+})`}
+      </pre>
     </>
   );
 }
@@ -118,27 +137,27 @@ function createBasemap() {
 }
 
 // Add aggregation expressions
-function createCarto(connection, datasources, columns, localCache) {
+function createCarto(connection, datasource, columns, localCache) {
   // Use local cache to speed up API. See `examples/vite.config.local.mjs`
   const apiBaseUrl = localCache ? '/carto-api' : 'https://gcp-us-east1.api.carto.com';
-  const {geometryTileset, attributeTable} = datasources;
+  const {attributes, geometryTileset, type} = datasource;
   return new CartoLayer({
     id: 'carto',
     connection,
     credentials: {accessToken, apiBaseUrl},
 
     // Named areas props
-    type: MAP_TYPES.TABLE,
+    type,
     uniqueIdProperty: 'geoid', // Property on which to perform the spatial JOIN
-    data: attributeTable, // Specify the table from which to fetch the columns. Must include columns specified in `columns`
-    columns: trueKeys(columns), // Columns to fetch from table specified in `data` prop
+    data: attributes, // Specify the table from which to fetch the columns. Must include columns specified in `columns`
+    columns, // Columns to fetch from table specified in `data` prop
     geoColumn: `namedArea:${geometryTileset}`, // Named area geometry source. Must be a tileset with a `uniqueIdProperty` column. All other columns will be ignored.
 
     // Styling
     pickable: true,
     getFillColor: d => {
-      const total_pop = d.properties.txn_amt / 4;
-      return [255 - total_pop, total_pop, 0];
+      const v = 'txn_amt' in d.properties ? d.properties.txn_amt / 4 : d.properties.total_pop / 100;
+      return [255 - v, v, 0];
     }
   });
 }
