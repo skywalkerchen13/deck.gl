@@ -94,14 +94,16 @@ function Root() {
           setColumns({...e});
         }}
       />
-      <button
-        style={{position: 'relative', margin: 3}}
-        onClick={() => {
-          setLocalCache(!localCache);
-        }}
-      >
-        {localCache ? 'Use server data' : 'Use local cache'}
-      </button>
+      {false && (
+        <button
+          style={{position: 'relative', margin: 3}}
+          onClick={() => {
+            setLocalCache(!localCache);
+          }}
+        >
+          {localCache ? 'Use server data' : 'Use local cache'}
+        </button>
+      )}
       <pre style={{}}>
         {`CartoLayer({
   type: "${datasource.type}",
