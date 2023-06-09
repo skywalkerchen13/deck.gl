@@ -2,10 +2,12 @@
 /* eslint-disable no-console */
 import React, {useState} from 'react';
 import {createRoot} from 'react-dom/client';
+import {StaticMap} from 'react-map-gl';
 import DeckGL from '@deck.gl/react';
-import {CartoLayer, FORMATS, MAP_TYPES} from '@deck.gl/carto';
+import {CartoLayer, colorBins, FORMATS, MAP_TYPES} from '@deck.gl/carto';
 import {GeoJsonLayer} from '@deck.gl/layers';
 
+const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
 const INITIAL_VIEW_STATE = {longitude: -70, latitude: 45, zoom: 7};
 const COUNTRIES =
   'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_admin_0_scale_rank.geojson';
@@ -15,6 +17,11 @@ const config = {
     blockgroup: {
       attributes: `select avg(txn_amt) as txn_amt, geoid FROM carto-dev-data.private.financial_geographicinsights_usa_blockgroup_2015_daily_v1_partitioned WHERE do_date between '2022-08-01' and '2022-08-07' group by geoid`,
       geometryTileset: 'carto-dev-data.named_areas_tilesets.geography_usa_blockgroup_2019_tileset',
+      getFillColor: colorBins({
+        attr: 'txn_amt',
+        domain: [0, 10, 50, 100, 250, 500, 1000],
+        colors: 'OrYel'
+      }),
       type: MAP_TYPES.QUERY
     }
   },
@@ -23,6 +30,11 @@ const config = {
       attributes:
         'carto-dev-data.named_areas_tilesets.sub_usa_acs_demographics_sociodemographics_usa_zcta5_2015_5yrs_20112015',
       geometryTileset: 'carto-dev-data.named_areas_tilesets.geography_usa_zcta5_2019_tileset',
+      getFillColor: colorBins({
+        attr: 'total_pop',
+        domain: [0, 1, 5, 10, 25, 50, 100].map(n => 1000 * n),
+        colors: 'Purp'
+      }),
       type: MAP_TYPES.TABLE
     }
   }
@@ -39,9 +51,9 @@ const COLUMNS = {
 };
 
 const accessToken =
-  'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRVNGNZTHAwaThjYnVMNkd0LTE0diJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImFsYmVydG9AY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfN3hoZnd5bWwiLCJpc3MiOiJodHRwczovL2F1dGguY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA4NDA5NTYzMzQxMzU5MDQxNjg0IiwiYXVkIjpbImNhcnRvLWNsb3VkLW5hdGl2ZS1hcGkiLCJodHRwczovL2NhcnRvLXByb2R1Y3Rpb24udXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTY4NjIwNTQ1NiwiZXhwIjoxNjg2MjkxODU2LCJhenAiOiJqQ1duSEs2RTJLMmFPeTlqTHkzTzdaTXBocUdPOUJQTCIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwgcmVhZDpjdXJyZW50X3VzZXIgdXBkYXRlOmN1cnJlbnRfdXNlciByZWFkOmNvbm5lY3Rpb25zIHdyaXRlOmNvbm5lY3Rpb25zIHJlYWQ6bWFwcyB3cml0ZTptYXBzIHJlYWQ6YWNjb3VudCBhZG1pbjphY2NvdW50IiwicGVybWlzc2lvbnMiOlsiYWRtaW46YWNjb3VudCIsImV4ZWN1dGU6d29ya2Zsb3dzIiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInJlYWQ6d29ya2Zsb3dzIiwidXBkYXRlOmN1cnJlbnRfdXNlciIsIndyaXRlOmFwcHMiLCJ3cml0ZTpjYXJ0by1kdy1ncmFudHMiLCJ3cml0ZTpjb25uZWN0aW9ucyIsIndyaXRlOmltcG9ydHMiLCJ3cml0ZTpsaXN0ZWRfYXBwcyIsIndyaXRlOm1hcHMiLCJ3cml0ZTp0b2tlbnMiLCJ3cml0ZTp3b3JrZmxvd3MiXX0.PckstP6SsmvtAuGkDk5IJzr0FlD2D7P9fcapBzxnZJw5evQYk59Q0dfQBggsxDkVteML6pq6QaN9nR9e5kbsLcm1y4u1GPl7iqTKWEC8vAC-rJXLN0FHcSxneBw3MWwwgGD9QdE5YQPxjSbpYUFd4YgXDTRw3fsAcUVWheNm6sBuOLPuYnsMKhvFK-wRrmTHfdQNbjA3St1e8IyErRn7cIDeVso9Z8G8Y_3V2-oRX3mzDUOehf52guNifQAZhAZiRY7V6fFvEXJKoklLaQVz2wdVWEu0xg7h2tFOpac48kfFJ8t4QpbXhdbyjBlGStVmlOpBvipPN9ynqudDWcZGCw';
+  'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRVNGNZTHAwaThjYnVMNkd0LTE0diJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImZwYWxtZXJAY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfN3hoZnd5bWwiLCJpc3MiOiJodHRwczovL2F1dGguY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA3OTY5NjU1OTI5NjExMjIxNDg2IiwiYXVkIjoiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImlhdCI6MTY4NjI5NTk1NywiZXhwIjoxNjg2MzgyMzU3LCJhenAiOiJBdHh2SERldVhsUjhYUGZGMm5qMlV2MkkyOXB2bUN4dSIsInBlcm1pc3Npb25zIjpbImV4ZWN1dGU6d29ya2Zsb3dzIiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInJlYWQ6d29ya2Zsb3dzIiwidXBkYXRlOmN1cnJlbnRfdXNlciIsIndyaXRlOmFwcHMiLCJ3cml0ZTpjYXJ0by1kdy1ncmFudHMiLCJ3cml0ZTpjb25uZWN0aW9ucyIsIndyaXRlOmltcG9ydHMiLCJ3cml0ZTptYXBzIiwid3JpdGU6dG9rZW5zIiwid3JpdGU6d29ya2Zsb3dzIl19.RvEpJHS6bpfekZr21n1a7P42PQ8mxOWPyKgoV8VtRmHOdhfE9j1UqlWf_GLA5rSrG53B_NFFVVfgBaOEhKE-mjlfja6Nm7MAeTk29jorB5wOz_DUR0t7RCpMna88ALiHSWJjYbFp-EXf7p_sHEJMfmpaeWXponEDypOQBUm1kZj2xFHILTr5f74i7SBmgelwhIsdyu9bdAauHECUKW_mOp5q7_C_aHJaN64n5txHk1enMp9Oq9MbhBmnmheLzu1QnV2d9rmuHE4apF-gYwVMB5Hyf0HNZnKEWiPs7NEzr_Uzu3pwsi3ZP0XPSYIBhCkIBdlPZLUeDSkBCfztV75d9w';
 
-const showBasemap = true;
+const showBasemap = false;
 const showCarto = true;
 
 function getTooltip({object}) {
@@ -70,7 +82,9 @@ function Root() {
           showCarto && createCarto(connection, datasource, cols, localCache)
         ]}
         getTooltip={getTooltip}
-      />
+      >
+        <StaticMap mapStyle={MAP_STYLE} />
+      </DeckGL>
       <ObjectSelect
         title="connection"
         obj={Object.keys(config)}
@@ -135,7 +149,7 @@ function createBasemap() {
 function createCarto(connection, datasource, columns, localCache) {
   // Use local cache to speed up API. See `examples/vite.config.local.mjs`
   const apiBaseUrl = localCache ? '/carto-api' : 'https://gcp-us-east1.api.carto.com';
-  const {attributes, geometryTileset, type} = datasource;
+  const {attributes, geometryTileset, getFillColor, type} = datasource;
   return new CartoLayer({
     id: 'carto',
     connection,
@@ -150,10 +164,7 @@ function createCarto(connection, datasource, columns, localCache) {
 
     // Styling
     pickable: true,
-    getFillColor: d => {
-      const v = 'txn_amt' in d.properties ? d.properties.txn_amt / 4 : d.properties.total_pop / 100;
-      return [255 - v, v, 0];
-    }
+    getFillColor
   });
 }
 
