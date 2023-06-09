@@ -40,13 +40,13 @@ const config = {
   }
 };
 const COLUMNS = {
-  txn_amt: true,
+  txn_amt: false,
   family_households: false,
   four_more_cars: false,
   gini_index: false,
   in_school: false,
   poverty: false,
-  total_pop: false,
+  total_pop: true,
   walked_to_work: false
 };
 
@@ -67,9 +67,9 @@ function getTooltip({object}) {
 
 function Root() {
   const [columns, setColumns] = useState(COLUMNS);
-  const [connection, setConnection] = useState('bigquery');
+  const [connection, setConnection] = useState('carto_dw');
   const [localCache, setLocalCache] = useState(true);
-  const [dataset, setDataset] = useState('blockgroup');
+  const [dataset, setDataset] = useState('zcta');
   const datasource = config[connection][dataset];
   const cols = trueKeys(columns);
   return (
