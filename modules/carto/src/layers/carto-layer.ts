@@ -72,7 +72,7 @@ const defaultProps = {
   aggregationResLevel: null,
 
   // (QueryParameters, optional): query parameters to be sent to the server.
-  queryParameters: null
+  queryParameters: null,
 };
 
 /** All properties supported by CartoLayer. */
@@ -163,6 +163,10 @@ type _CartoLayerProps = {
 
   /** Query parameters to be sent to the server. **/
   queryParameters?: QueryParameters;
+
+
+  /** Object with the configuration for timeseries Layers */
+  timeseries: {type: 'object', value: {}, optional: true},
 };
 
 export default class CartoLayer<ExtraProps extends {} = {}> extends CompositeLayer<
@@ -244,7 +248,7 @@ export default class CartoLayer<ExtraProps extends {} = {}> extends CompositeLay
 
   async _updateData(): Promise<void> {
     try {
-      const {type, data: source, credentials, connection, ...rest} = this.props;
+      const {type, data: source, credentials, connection, timeseries, ...rest} = this.props;
       const localConfig = {...getDefaultCredentials(), ...credentials};
       const {apiVersion} = localConfig;
 
@@ -259,6 +263,7 @@ export default class CartoLayer<ExtraProps extends {} = {}> extends CompositeLay
           source,
           credentials: credentials as CloudNativeCredentials,
           connection,
+          timeseries,
           ...rest,
           // CartoLayer only supports tiled output from v8.8, force data format
           format: FORMATS.TILEJSON

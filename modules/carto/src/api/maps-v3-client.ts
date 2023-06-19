@@ -134,6 +134,7 @@ type FetchLayerDataParams = {
   aggregationExp?: string;
   aggregationResLevel?: number;
   queryParameters?: QueryParameters;
+  timeseries?: any // TODO
 };
 
 type MapsAPIParameters = {
@@ -147,6 +148,7 @@ type MapsAPIParameters = {
   columns?: string;
   aggregationExp?: string;
   aggregationResLevel?: number;
+  timeseriesColumn?: string;
 };
 
 /**
@@ -160,7 +162,8 @@ function getParameters({
   clientId,
   aggregationExp,
   aggregationResLevel,
-  queryParameters
+  queryParameters,
+  timeseries
 }: Omit<FetchLayerDataParams, 'connection' | 'credentials'>): MapsAPIParameters {
   const parameters: MapsAPIParameters = {
     client: clientId || DEFAULT_CLIENT,
@@ -191,6 +194,11 @@ function getParameters({
     parameters.aggregationResLevel = aggregationResLevel;
   }
 
+  if (timeseries) {
+    parameters.timeseriesColumn = timeseries.column
+    // TODO: add other timeseries params
+  }
+
   return parameters;
 }
 
@@ -210,7 +218,8 @@ export async function mapInstantiation({
   headers,
   aggregationExp,
   aggregationResLevel,
-  queryParameters
+  queryParameters,
+  timeseries
 }: FetchLayerDataParams): Promise<MapInstantiation> {
   const baseUrl = `${credentials.mapsUrl}/${connection}/${type}`;
   const parameters = getParameters({
@@ -221,8 +230,10 @@ export async function mapInstantiation({
     clientId,
     aggregationResLevel,
     aggregationExp,
-    queryParameters
+    queryParameters,
+    timeseries
   });
+  console.log('timeseries', timeseries)
   const encodedParameters = Object.entries(parameters).map(([key, value]) => {
     if (typeof value !== 'string') {
       value = JSON.stringify(value);
@@ -310,7 +321,8 @@ export async function fetchLayerData({
   headers,
   aggregationExp,
   aggregationResLevel,
-  queryParameters
+  queryParameters,
+  timeseries
 }: FetchLayerDataParams): Promise<FetchLayerDataResult> {
   // Internally we split data fetching into two parts to allow us to
   // conditionally fetch the actual data, depending on the metadata state
@@ -327,7 +339,8 @@ export async function fetchLayerData({
     headers,
     aggregationExp,
     aggregationResLevel,
-    queryParameters
+    queryParameters,
+    timeseries
   });
 
   const errorContext = {requestType: REQUEST_TYPES.DATA, connection, type, source};
@@ -349,7 +362,8 @@ async function _fetchDataUrl({
   headers,
   aggregationExp,
   aggregationResLevel,
-  queryParameters
+  queryParameters,
+  timeseries
 }: FetchLayerDataParams) {
   const defaultCredentials = getDefaultCredentials();
   // Only pick up default credentials if they have been defined for
@@ -384,7 +398,8 @@ async function _fetchDataUrl({
     headers,
     aggregationExp,
     aggregationResLevel,
-    queryParameters
+    queryParameters,
+    timeseries
   });
   let url: string | null = null;
   let mapFormat: Format | undefined;
@@ -435,8 +450,10 @@ async function _fetchMapDataset(
     geoColumn,
     source,
     type,
-    queryParameters
+    queryParameters,
+    timeseriesColumn
   } = dataset;
+  debugger
   // First fetch metadata
   const {url, mapFormat} = await _fetchDataUrl({
     aggregationExp,
