@@ -3,82 +3,104 @@
 import React, {useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import DeckGL from '@deck.gl/react';
-import {CartoLayer, MAP_TYPES} from '@deck.gl/carto';
-import {GeoJsonLayer} from '@deck.gl/layers';
+import {Map} from 'react-map-gl';
+import maplibregl from 'maplibre-gl';
+import {Box, IconButton, Paper, Slider, makeStyles} from '@material-ui/core' 
+import {PauseOutlined, PlayArrowOutlined} from '@material-ui/icons';
+import {MAP_TYPES } from '@deck.gl/carto';
+import useTorque from './useTorque';
+import { LinearInterpolator } from 'deck.gl';
 
-const INITIAL_VIEW_STATE = {longitude: 8, latitude: 47, zoom: 6};
+const INITIAL_VIEW_STATE = {longitude: -73.8, latitude: 40.7, zoom: 9};
+const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
 const COUNTRIES =
   'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_admin_0_scale_rank.geojson';
 
-// Skip CDN
-// const apiBaseUrl = 'https://direct-gcp-us-east1.api.carto.com';
-// PROD US GCP
-const apiBaseUrl = 'https://gcp-us-east1.api.carto.com';
-// const apiBaseUrl = 'https://gcp-us-east1-06.dev.api.carto.com';
-// Localhost
-// const apiBaseUrl = 'http://localhost:8002'
+const apiBaseUrl = 'https://gcp-us-east1-04.dev.api.carto.com';
+const accessToken = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InlscXg0SVg3ek1oaUR1OFplSUlFSyJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImluZnJhc3RydWN0dXJlK2RlZC0wMDQtMTI3MzAtMTY4NzI0OTAwNkBjYXJ0b2RiLmNvbSIsImh0dHA6Ly9hcHAuY2FydG8uY29tL2FjY291bnRfaWQiOiJhY19uMTJudDRzZiIsImlzcyI6Imh0dHBzOi8vYXV0aC5kZXYuY2FydG8uY29tLyIsInN1YiI6ImF1dGgwfDY0OTE2MDdhMDZiZWI5ZmNhMDg5MjE1YyIsImF1ZCI6WyJjYXJ0by1jbG91ZC1uYXRpdmUtYXBpIiwiaHR0cHM6Ly9jYXJ0by1kZWRpY2F0ZWQtZW52LnVzLmF1dGgwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE2ODcyNTI3MjMsImV4cCI6MTY4NzMzOTEyMywiYXpwIjoiRzNxN2wyVW9NelJYOG9zaG1BdXNlZDBwZ1FWV3JKR1AiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIHJlYWQ6Y3VycmVudF91c2VyIHVwZGF0ZTpjdXJyZW50X3VzZXIgcmVhZDpjb25uZWN0aW9ucyB3cml0ZTpjb25uZWN0aW9ucyByZWFkOm1hcHMgd3JpdGU6bWFwcyByZWFkOmFjY291bnQgYWRtaW46YWNjb3VudCIsInBlcm1pc3Npb25zIjpbImFkbWluOmFjY291bnQiLCJleGVjdXRlOndvcmtmbG93cyIsInJlYWQ6YWNjb3VudCIsInJlYWQ6YXBwcyIsInJlYWQ6Y29ubmVjdGlvbnMiLCJyZWFkOmN1cnJlbnRfdXNlciIsInJlYWQ6aW1wb3J0cyIsInJlYWQ6bGlzdGVkX2FwcHMiLCJyZWFkOm1hcHMiLCJyZWFkOnRpbGVzZXRzIiwicmVhZDp0b2tlbnMiLCJyZWFkOndvcmtmbG93cyIsInVwZGF0ZTpjdXJyZW50X3VzZXIiLCJ3cml0ZTphcHBzIiwid3JpdGU6Y2FydG8tZHctZ3JhbnRzIiwid3JpdGU6Y29ubmVjdGlvbnMiLCJ3cml0ZTppbXBvcnRzIiwid3JpdGU6bGlzdGVkX2FwcHMiLCJ3cml0ZTptYXBzIiwid3JpdGU6dG9rZW5zIiwid3JpdGU6d29ya2Zsb3dzIl19.XJRQV8Pj8sjHzoi5aqS_ZymALdYuxoq1O3EYd7yVDVYfF3B50waHK8J9FktcGbesTBdj61fcn1iFELwd_E3ZjUlnPOk3vtVy3wXb5NtIsVIAERBPPbSnjHLQwfl_HFH7cwvWJPfwK9BO047JlZoPgZObzQmcpGxeaiqBSgJNajcNUy4KT5oz6WGNaEptAhg019rFj5IVaqkCW7mivE1rt6tDPsPUUJ4Oh_fWuUQWCF0fyMyk7RezTguifqo1GkPuPoAP9zAFpaSxSlk--u5pMhLyDt1F4qKZM54rsU5b2OffLaIf2hUaTQbNc7y1xRuBQL8UP4zBQYmYWXn0LxwnmA';
+const hackathonDataset = 'cartodb-on-gcp-backend-team.juanra.historical_aqi_daily'
+const devDataset = 'cartobq.testtables.points_10k'
 
-const accessToken = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRVNGNZTHAwaThjYnVMNkd0LTE0diJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6Imltb3Jlbm9AY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfN3hoZnd5bWwiLCJpc3MiOiJodHRwczovL2F1dGguY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA4MzQzNDkzNTAzODQ0MjcyNTExIiwiYXVkIjpbImNhcnRvLWNsb3VkLW5hdGl2ZS1hcGkiLCJodHRwczovL2NhcnRvLXByb2R1Y3Rpb24udXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTY4NzE1NzExNywiZXhwIjoxNjg3MjQzNTE3LCJhenAiOiJqQ1duSEs2RTJLMmFPeTlqTHkzTzdaTXBocUdPOUJQTCIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwgcmVhZDpjdXJyZW50X3VzZXIgdXBkYXRlOmN1cnJlbnRfdXNlciByZWFkOmNvbm5lY3Rpb25zIHdyaXRlOmNvbm5lY3Rpb25zIHJlYWQ6bWFwcyB3cml0ZTptYXBzIHJlYWQ6YWNjb3VudCIsInBlcm1pc3Npb25zIjpbImV4ZWN1dGU6d29ya2Zsb3dzIiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInJlYWQ6d29ya2Zsb3dzIiwidXBkYXRlOmN1cnJlbnRfdXNlciIsIndyaXRlOmFwcHMiLCJ3cml0ZTpjYXJ0by1kdy1ncmFudHMiLCJ3cml0ZTpjb25uZWN0aW9ucyIsIndyaXRlOmltcG9ydHMiLCJ3cml0ZTptYXBzIiwid3JpdGU6dG9rZW5zIiwid3JpdGU6d29ya2Zsb3dzIl19.ECwt8rYGK4Qp1ACOSwoD-w_iObaRKZEjVEOjpVT1mxPcEU-yEN5c-BbArlGR1wANx_DpfUziI-JXTHbcIt7LKKkV-oJC3ednBVqbSwHqCiZGS6GG__KZm-TKmB64wfFVs-z_tgT5GlsIxyn0uBwThqrZhmY0xJJPveyXCYvAac66-h2vIHuK6JfWNIEfiRo5yMsrMsVihUqiwd3lIbZcTWnauoj4ZdbKwDiTLwyUQdbtThgnh0Q6GD_E554hIPR2uCFkcSAZRVnoT9k_867nLa6TfD0LSMFebSRfWxFQCRrKl0bgmIhvYEVJOLBsA6Cv86cgm6MtCnc0dcPVaCb33g';
 
-const showBasemap = true;
-const showCarto = true;
+const useStyles = makeStyles((theme) => ({
+  controller: {
+    position: 'absolute',
+    width: 'calc(100vw - 32px)',
+    padding: theme.spacing(2)
+  }
+}))
 
 function Root() {
-  const [connection, setConnection] = useState('bigquery');
+  const classes = useStyles()
+  const [connection, setConnection] = useState('bqconn');
+
+  const interpolator = new LinearInterpolator(['start', 'end']);
+  const { layer: torqueLayer, progress, playing, pauseOrResume, setProgress } = useTorque({
+    type: MAP_TYPES.TABLE,
+    connection,
+    credentials: {accessToken, apiBaseUrl},
+    data: hackathonDataset,
+    formatTiles: 'binary',
+    pointRadiusScale: 2,
+    pointRadiusMinPixels: 4,
+    pointRadiusUnits: 'meters',
+    getPointRadius: (d, progress) => {
+      const values = d.properties.values.split(',')
+      
+      return Number(values[progress]) * 100
+    },
+    // getFillColor: [238, 77, 90],
+    getFillColor: (d, progress) => {
+      const values = d.properties.values.split(',')
+      
+      return [Number(values[progress]) * 10, 120, 100]
+    },
+    lineWidthMinPixels: 0,
+    timeseries: {
+      column: 'date_local',
+      start: '1993-01-10',
+      end: '1994-01-10',
+      step: 'day',
+      propertyColumn: 'arithmetic_mean',
+      aggFunction: 'AVG'
+    },
+    transitions: {
+      getPointRadius: 500
+    },
+    interpolator
+  }, ['getPointRadius', 'getFillColor'], {
+    steps: 365,
+    secondsByStep: 0.2
+  })
+
+
+  const layers = [torqueLayer]
+  
   return (
     <>
       <DeckGL
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
-        layers={[
-          showBasemap && createBasemap(),
-          showCarto && createCarto(connection)
-        ]}
-      />
+        layers={layers}
+      >
+        <Map mapLib={maplibregl} mapStyle={MAP_STYLE} />
+      </DeckGL>
+
+
+      <Box width={100}>
+        <Paper className={classes.controller}>
+          <Box display="flex" alignItems="center">
+            <IconButton onClick={pauseOrResume}>
+              {playing ? <PauseOutlined/> : <PlayArrowOutlined />}
+            </IconButton>
+            <Box flex={1}>
+              <Slider min={0} max={365} step={1} value={progress} onChange={(d, newValue) => setProgress(newValue)}/>
+            </Box>
+          </Box>
+        </Paper>
+      </Box>
     </>
   );
-}
-
-function createBasemap() {
-  return new GeoJsonLayer({
-    id: 'base-map',
-    data: COUNTRIES,
-    // Styles
-    stroked: true,
-    filled: true,
-    lineWidthMinPixels: 2,
-    opacity: 0.4,
-    getLineColor: [60, 60, 60],
-    getFillColor: [200, 200, 200]
-  });
-}
-
-// Add aggregation expressions
-function createCarto(connection) {
-  
-  return new CartoLayer({
-    type: MAP_TYPES.TABLE,
-    connection,
-    credentials: {accessToken, apiBaseUrl},
-    data: 'cartobq.testtables.points_10k',
-    formatTiles: 'binary',
-    pointRadiusScale: 1,
-    pointRadiusMinPixels: 1,
-    pointRadiusMinPixels: 10,
-    pointRadiusUnits: 'pixels',
-    getRadius: (d) => {
-      return Math.pow(10, d.properties.point_order / 10)
-    },
-    getLineColor: [0, 0, 0, 200],
-    getFillColor: [238, 77, 90],
-    lineWidthMinPixels: 1,
-    timeseries: {
-      column: 'date',
-      start: '01-01-2023T00:00:00Z',
-      end: '01-01-2023T00:00:00Z',
-      aggregation: 'avg'
-    }
-  })
 }
 
 const container = document.body.appendChild(document.createElement('div'));

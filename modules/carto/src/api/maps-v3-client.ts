@@ -148,7 +148,12 @@ type MapsAPIParameters = {
   columns?: string;
   aggregationExp?: string;
   aggregationResLevel?: number;
-  timeseriesColumn?: string;
+  timeSeriesColumn?: string
+  timeSeriesStart?: string
+  timeSeriesEnd?: string
+  timeSeriesStep?: string
+  timePropertyColumn?: string
+  timeAggFunction?: string
 };
 
 /**
@@ -195,8 +200,12 @@ function getParameters({
   }
 
   if (timeseries) {
-    parameters.timeseriesColumn = timeseries.column
-    // TODO: add other timeseries params
+    parameters.timeSeriesColumn = timeseries.column
+    parameters.timeSeriesStart = timeseries.start
+    parameters.timeSeriesEnd = timeseries.end
+    parameters.timeSeriesStep = timeseries.step
+    parameters.timePropertyColumn = timeseries.propertyColumn
+    parameters.timeAggFunction = timeseries.aggFunction
   }
 
   return parameters;
@@ -233,7 +242,7 @@ export async function mapInstantiation({
     queryParameters,
     timeseries
   });
-  console.log('timeseries', timeseries)
+  
   const encodedParameters = Object.entries(parameters).map(([key, value]) => {
     if (typeof value !== 'string') {
       value = JSON.stringify(value);
