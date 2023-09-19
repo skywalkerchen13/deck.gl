@@ -25,6 +25,7 @@ import {load} from '@loaders.gl/core';
 import {MeshAttributes} from '@loaders.gl/schema';
 import {Tileset3D, Tile3D, TILE_TYPE} from '@loaders.gl/tiles';
 import {Tiles3DLoader} from '@loaders.gl/3d-tiles';
+import {ColorsByAttribute, ColorsByAttributeResult, customizeColors} from './utils';
 
 const SINGLE_DATA = [0];
 
@@ -60,6 +61,9 @@ type _Tile3DLayerProps<DataT> = {
    */
   loader?: typeof Tiles3DLoader;
 
+  /** Custom color parameters for colorization by attribute. **/
+  colorsByAttribute?: ColorsByAttribute;
+
   /** Called when Tileset JSON file is loaded. **/
   onTilesetLoad?: (tile: Tileset3D) => void;
 
@@ -89,6 +93,9 @@ export default class Tile3DLayer<DataT = any, ExtraPropsT extends {} = {}> exten
     lastUpdatedViewports: {[viewportId: string]: Viewport} | null;
     layerMap: {[layerId: string]: any};
     tileset3d: Tileset3D | null;
+    colorsByAttribute: ColorsByAttribute | null;
+    tileAttributeLoadingCounter: number;
+    isCustomColors: boolean;
   };
 
   initializeState() {
@@ -100,7 +107,10 @@ export default class Tile3DLayer<DataT = any, ExtraPropsT extends {} = {}> exten
       layerMap: {},
       tileset3d: null,
       activeViewports: {},
-      lastUpdatedViewports: null
+      lastUpdatedViewports: null,
+      colorsByAttribute: null,
+      tileAttributeLoadingCounter: 0,
+      isCustomColors: false
     };
   }
 
@@ -117,13 +127,23 @@ export default class Tile3DLayer<DataT = any, ExtraPropsT extends {} = {}> exten
     if (props.data && props.data !== oldProps.data) {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this._loadTileset(props.data);
+    } else if (
+      this.state.colorsByAttribute !== props.colorsByAttribute &&
+      this.state.tileset3d?.selectedTiles[0]?.type === TILE_TYPE.MESH
+    ) {
+      this.setState({
+        colorsByAttribute: props.colorsByAttribute
+      });
+      this._colorizeTileset();
     }
 
     if (changeFlags.viewportChanged) {
       const {activeViewports} = this.state;
       const viewportsNumber = Object.keys(activeViewports).length;
       if (viewportsNumber) {
-        this._updateTileset(activeViewports);
+        if (!this.state.tileAttributeLoadingCounter) {
+          this._updateTileset(activeViewports);
+        }
         this.state.lastUpdatedViewports = activeViewports;
         this.state.activeViewports = {};
       }
@@ -205,6 +225,7 @@ export default class Tile3DLayer<DataT = any, ExtraPropsT extends {} = {}> exten
       onTileLoad: this._onTileLoad.bind(this),
       onTileUnload: this._onTileUnload.bind(this),
       onTileError: this.props.onTileError,
+      onTraversalComplete: this._onTraversalComplete.bind(this),
       ...options
     });
 
@@ -219,9 +240,37 @@ export default class Tile3DLayer<DataT = any, ExtraPropsT extends {} = {}> exten
 
   private _onTileLoad(tileHeader: Tile3D): void {
     const {lastUpdatedViewports} = this.state;
+
+    if (tileHeader.type === TILE_TYPE.MESH) {
+      tileHeader.userData.originalColorsAttributes = {
+        ...tileHeader.content.attributes.colors,
+        value: tileHeader.content.attributes.colors.value.slice()
+      };
+      this._colorizeTile(tileHeader);
+    }
+
     this.props.onTileLoad(tileHeader);
-    this._updateTileset(lastUpdatedViewports);
-    this.setNeedsUpdate();
+    if (!this.state.colorsByAttribute) {
+      this._updateTileset(lastUpdatedViewports);
+      this.setNeedsUpdate();
+    }
+  }
+
+  private _onTraversalComplete(selectedTiles: Tile3D[]): Tile3D[] {
+    if (this.state.isCustomColors && selectedTiles[0]?.type === TILE_TYPE.MESH) {
+      selectedTiles.forEach(tile => {
+        if (
+          tile.content &&
+          tile.userData.customColors !== this.state.colorsByAttribute &&
+          tile.userData.originalColorsAttributes
+        ) {
+          tile.content.attributes.colors.value =
+            tile.userData.originalColorsAttributes.value.slice();
+          this._colorizeTile(tile);
+        }
+      });
+    }
+    return selectedTiles;
   }
 
   private _onTileUnload(tileHeader: Tile3D): void {
@@ -248,6 +297,57 @@ export default class Tile3DLayer<DataT = any, ExtraPropsT extends {} = {}> exten
         this.setState({frameNumber});
       }
     });
+  }
+
+  private _colorizeTile(tile: Tile3D): void {
+    const {tileset3d, layerMap, colorsByAttribute} = this.state;
+
+    if (colorsByAttribute) {
+      if (tile.content) {
+        // original colors needs to be used for colors multipliyng mode and not needed for replacement
+        if (colorsByAttribute.mode === 'multiply' && tile.userData.originalColorsAttributes) {
+          tile.content.attributes.colors.value =
+            tile.userData.originalColorsAttributes.value.slice();
+        }
+        this.setState({tileAttributeLoadingCounter: this.state.tileAttributeLoadingCounter + 1});
+        customizeColors(tile, colorsByAttribute, tileset3d?.loader.options)
+          .then((result: ColorsByAttributeResult) => {
+            delete layerMap[result.tile.id];
+            if (result.colorsByAttribute === this.state.colorsByAttribute) {
+              result.tile.content.attributes.colors = result.colors;
+              result.tile.userData.customColors = colorsByAttribute;
+            }
+          })
+          .finally(() => {
+            this.setState({
+              tileAttributeLoadingCounter: this.state.tileAttributeLoadingCounter - 1
+            });
+            if (!this.state.tileAttributeLoadingCounter) {
+              this._updateTileset(this.state.activeViewports);
+              this.setNeedsUpdate();
+            }
+          });
+      }
+    } else if (tile.content && tile.userData.originalColorsAttributes) {
+      tile.content.attributes.colors.value = tile.userData.originalColorsAttributes.value.slice();
+      tile.userData.customColors = colorsByAttribute;
+      delete layerMap[tile.id];
+    }
+  }
+
+  private _colorizeTileset(): void {
+    const {tileset3d, colorsByAttribute} = this.state;
+
+    this.setState({isCustomColors: true});
+
+    tileset3d?.selectedTiles.forEach(tile => {
+      this._colorizeTile(tile);
+    });
+
+    if (!colorsByAttribute) {
+      this._updateTileset(this.state.activeViewports);
+      this.setNeedsUpdate();
+    }
   }
 
   private _getSubLayer(
