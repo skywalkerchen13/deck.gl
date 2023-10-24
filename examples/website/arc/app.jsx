@@ -9,7 +9,10 @@ import {scaleQuantile} from 'd3-scale';
 
 // Source data GeoJSON
 const DATA_URL =
-  'https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/arc/counties.json'; // eslint-disable-line
+  // 'https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/arc/counties.json'; // eslint-disable-line
+  // Lukas: forked deck.gl to my personal repository to change the input file
+  // Lukas: need to press "raw" on th github website to access the file in the fitting format
+  'https://raw.githubusercontent.com/skywalkerchen13/deck.gl/lukas_test/examples/website/arc/counties.json';
 
 export const inFlowColors = [
   [255, 255, 204],
@@ -47,7 +50,7 @@ function calculateArcs(data, selectedCounty) {
     return null;
   }
   if (!selectedCounty) {
-    selectedCounty = data.find(f => f.properties.name === 'Goochland, VA');
+    selectedCounty = data.find(f => f.properties.name === 'DXB Vertiport');
     // Lukas: changing the selectedCounty changes the center to where all arcs go
     // selectedCounty = data.find(f => f.properties.name === 'Los Angeles, CA');
   }
@@ -58,7 +61,7 @@ function calculateArcs(data, selectedCounty) {
     return {
       source: centroid,
       target: f.properties.centroid,
-      value: flows[toId]
+      value: flows[toId] 
     };
   });
 
