@@ -47,7 +47,9 @@ function calculateArcs(data, selectedCounty) {
     return null;
   }
   if (!selectedCounty) {
-    selectedCounty = data.find(f => f.properties.name === 'Los Angeles, CA');
+    selectedCounty = data.find(f => f.properties.name === 'Goochland, VA');
+    // Lukas: changing the selectedCounty changes the center to where all arcs go
+    // selectedCounty = data.find(f => f.properties.name === 'Los Angeles, CA');
   }
   const {flows, centroid} = selectedCounty.properties;
 
@@ -99,7 +101,9 @@ export default function App({data, strokeWidth = 1, mapStyle = MAP_STYLE}) {
       getTargetPosition: d => d.target,
       getSourceColor: d => (d.gain > 0 ? inFlowColors : outFlowColors)[d.quantile],
       getTargetColor: d => (d.gain > 0 ? outFlowColors : inFlowColors)[d.quantile],
-      getWidth: strokeWidth
+      // Lukas: strokeWidth changes the thickness of the arcs
+      getWidth: d => strokeWidth
+      // getWidth: d => d.quantile
     })
   ];
 
