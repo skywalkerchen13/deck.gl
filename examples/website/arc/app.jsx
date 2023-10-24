@@ -50,7 +50,7 @@ function calculateArcs(data, selectedCounty) {
     return null;
   }
   if (!selectedCounty) {
-    selectedCounty = data.find(f => f.properties.name === 'Los Angeles, CA');
+    selectedCounty = data.find(f => f.properties.name === 'Waynesboro, VA');
     // Lukas: changing the selectedCounty changes the center to where all arcs go
     // selectedCounty = data.find(f => f.properties.name === 'Los Angeles, CA');
   }
