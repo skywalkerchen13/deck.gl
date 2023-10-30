@@ -85,6 +85,7 @@ function getTooltip({object}) {
 export default function App({data, strokeWidth = 1, mapStyle = MAP_STYLE}) {
   const [selectedCounty, selectCounty] = useState(null);
 
+  // const new_data = data; //require("C:\\Users\\LukasPreis\\Code\\DeckGL\\examples\\website\\arc\\counties.json");
   const arcs = useMemo(() => calculateArcs(data, selectedCounty), [data, selectedCounty]);
 
   const layers = [
