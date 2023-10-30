@@ -50,7 +50,7 @@ function calculateArcs(data, selectedCounty) {
     return null;
   }
   if (!selectedCounty) {
-    selectedCounty = data.find(f => f.properties.name === 'Waynesboro, VA'); 
+    selectedCounty = data.find(f => f.properties.name === 'Woodbury, IA'); 
     // Lukas: changing the selectedCounty changes the center to where all arcs go
     // selectedCounty = data.find(f => f.properties.name === 'Los Angeles, CA');
   }
@@ -86,6 +86,7 @@ export default function App({data, strokeWidth = 1, mapStyle = MAP_STYLE}) {
   const [selectedCounty, selectCounty] = useState(null);
 
   // const new_data = data; //require("C:\\Users\\LukasPreis\\Code\\DeckGL\\examples\\website\\arc\\counties.json");
+  // data = require("counties.json");
   const arcs = useMemo(() => calculateArcs(data, selectedCounty), [data, selectedCounty]);
 
   const layers = [
@@ -106,8 +107,8 @@ export default function App({data, strokeWidth = 1, mapStyle = MAP_STYLE}) {
       getSourceColor: d => (d.gain > 0 ? inFlowColors : outFlowColors)[d.quantile],
       getTargetColor: d => (d.gain > 0 ? outFlowColors : inFlowColors)[d.quantile],
       // Lukas: strokeWidth changes the thickness of the arcs
-      getWidth: strokeWidth
-      // getWidth: d => d.quantile
+      // getWidth: strokeWidth
+      getWidth: d => d.quantile /2
     })
   ];
 
